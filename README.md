@@ -1,8 +1,13 @@
 # VintageVoice
 
 **The first open-source TTS model for historical speech patterns.**
+*Proof of Antiquity for AI voices.*
+
+> Dead accents preserved on vintage hardware compute. 164 hours of pre-1955 speech. 44,345 training segments. Built on a $69 refurb hard drive with pawn shop GPUs.
 
 Digital preservation of voices the world is losing — transatlantic accents, newsreel narrators, Edison cylinder recordings, and the lost vocal styles of the 1880s-1960s.
+
+**Model**: [VintageVoice on HuggingFace](https://huggingface.co/Scottcjn/vintage-voice) (coming soon)
 
 ## Why This Exists
 
@@ -119,20 +124,69 @@ Trained on the [Elyan Labs](https://elyanlabs.ai) compute cluster:
 - IBM POWER8 S824 512GB RAM (large model experiments)
 - Validated against actual vintage hardware audio output
 
+## Training Data Stats
+
+| Metric | Value |
+|--------|-------|
+| **Total segments** | 44,345 |
+| **Total audio** | 164.59 hours |
+| **Vocab tokens** | 167 |
+| **Source files** | 2,581 recordings |
+| **Era coverage** | 1888-1955 |
+| **Format** | 24kHz mono WAV, 5-15s segments |
+
+For comparison, LJSpeech (the standard TTS benchmark) is 24 hours. We have **6.8x more data**, and it's all vintage.
+
+## Training
+
+**Base model**: F5-TTS v1 (337M parameters, flow-matching architecture)
+
+**Key insight**: F5-TTS separates *voice identity* (from reference audio) from *speech style* (from training data). Fine-tuning teaches the model vintage speech patterns — transatlantic prosody, cadence, pronunciation. At inference, you provide any modern voice as reference, and the model generates speech in that voice but with vintage delivery.
+
+This means you can make *anyone* speak with a transatlantic accent — not just clone a specific vintage speaker.
+
+```bash
+# Fine-tune on vintage data
+python -m f5_tts.train.finetune_cli \
+    --exp_name F5TTS_v1_Base \
+    --dataset_name vintage_voice_f5_37k \
+    --learning_rate 1e-5 \
+    --batch_size_per_gpu 3200 \
+    --epochs 50 \
+    --finetune \
+    --tokenizer custom \
+    --tokenizer_path data/vocab.txt
+```
+
 ## Project Status
 
 | Component | Status |
 |-----------|--------|
-| Training data collection | In Progress |
-| Whisper transcription pipeline | Planned |
-| Text-audio alignment | Planned |
-| F5-TTS fine-tuning | Planned |
-| `transatlantic` preset | Planned |
+| Training data collection | **Done** — 2,581 files, 164 hours |
+| Audio preprocessing | **Done** — 44,345 segments |
+| Whisper transcription | **Done** — 43,876 transcribed |
+| F5-TTS dataset preparation | **Done** — Arrow format ready |
+| F5-TTS fine-tuning | **Training** — Epoch 1/50, loss 0.63 |
+| `transatlantic` preset | In Progress |
 | `newsreel` preset | Planned |
 | `fireside` preset | Planned |
 | `edison` preset | Planned |
-| HuggingFace model release | Planned |
+| HuggingFace model release | After training completes |
 | Python package | Planned |
+
+## Commercial Applications
+
+This isn't just a preservation project. Period-accurate voices have real demand:
+
+- **Film & TV**: Any production set before 1960 (Boardwalk Empire, The Crown, Peaky Blinders)
+- **Video Games**: Historical settings need period voices for every NPC (Bioshock, LA Noire, Fallout)
+- **Audiobooks**: Vintage narration style for period literature
+- **Documentaries**: Authentic narrator voices instead of modern approximations
+- **Museums & Exhibits**: Historical figures speaking in their actual accent patterns
+- **Theater**: Pre-production voice references for period plays
+- **Podcasts**: Historical dramatizations and recreations
+
+Hollywood pays voice coaches thousands per actor to teach transatlantic delivery. This model does it for free.
 
 ## The Preservation Angle
 
@@ -145,6 +199,20 @@ This isn't just a fun TTS model. It's digital preservation of speech patterns th
 
 Every year, the people who remember these voices die. VintageVoice captures them before they're gone entirely.
 
+## How It Was Built
+
+**Total cost: ~$138** (drive + electricity)
+
+| Component | Cost | What |
+|-----------|------|------|
+| Storage | $69 | 18TB Seagate Expansion (Amazon refurb) |
+| GPUs | $0 | 2x Tesla V100 32GB (already in lab, eBay datacenter pulls) |
+| Training data | $0 | Public domain from Archive.org |
+| Base model | $0 | F5-TTS open source |
+| Electricity | ~$69 | Estimated for 7 days V100 training |
+
+The [Elyan Labs](https://elyanlabs.ai) compute cluster runs on pawn shop hardware, eBay datacenter pulls, and Amazon pallet resellers. $12K total investment, $40-60K retail value. 18+ GPUs, 228GB+ VRAM, IBM POWER8 with 512GB RAM, vintage PowerPC fleet.
+
 ## License
 
 MIT License. Training data is public domain.
@@ -153,4 +221,11 @@ MIT License. Training data is public domain.
 
 [Elyan Labs](https://github.com/Scottcjn) — Where vintage hardware meets cutting-edge AI.
 
-*"The pawn shop lab that preserves what the big labs forgot."*
+*"Proof of Antiquity for AI voices. The pawn shop lab that preserves what the big labs forgot."*
+
+## Links
+
+- [HuggingFace Model](https://huggingface.co/Scottcjn/vintage-voice) (coming soon)
+- [Elyan Labs](https://elyanlabs.ai)
+- [RustChain](https://rustchain.org) — Our blockchain with Proof of Antiquity hardware rewards
+- [BoTTube](https://bottube.ai) — AI video platform (demo videos coming)
