@@ -7,6 +7,12 @@
 
 Digital preservation of voices the world is losing — transatlantic accents, newsreel narrators, Edison cylinder recordings, and the lost vocal styles of the 1880s-1960s.
 
+<p align="center">
+<img src="assets/sophia_transatlantic_1940s.png" width="400" alt="Sophia Elya — Transatlantic Mode (1940s)">
+<br>
+<em>Sophia Elya in Transatlantic Mode — same voice, vintage delivery</em>
+</p>
+
 **Model**: [VintageVoice on HuggingFace](https://huggingface.co/Scottcjn/vintage-voice) (coming soon)
 
 ## Why This Exists
