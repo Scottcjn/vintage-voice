@@ -2,100 +2,142 @@
 """
 VintageVoice — Speech Generation with Historical Voice Presets
 
-Generate speech that sounds like it's from the 1930s-1950s.
-Uses F5-TTS with vintage fine-tuned weights.
+Generate speech that sounds like it's from the 1888-1955 era.
+Uses F5-TTS (v1 Base architecture) with vintage fine-tuned weights.
+
+IMPORTANT — Architecture: VintageVoice was fine-tuned on top of
+`F5TTS_v1_Base` (not the older `F5TTS_Base`/v0). Loading our weights
+into the wrong architecture silently produces garbled output because
+F5-TTS's load_checkpoint uses strict=False and drops mismatched keys.
+This script pins the correct architecture explicitly.
 """
 import argparse
 import os
-import torch
-import torchaudio
+import sys
 
 
-# Reference audio clips for each preset (included in model release)
+# Reference audio clips for each preset (included in the model release).
+# Each is a clean 5-15 sec WAV (24 kHz mono) that captures the target
+# acoustic style — transatlantic broadcast, Edison cylinder, etc.
 PRESET_REFS = {
     "transatlantic": "refs/transatlantic_ref.wav",
-    "newsreel": "refs/newsreel_narrator_ref.wav",
-    "fireside": "refs/fdr_fireside_ref.wav",
-    "radio_drama": "refs/radio_drama_ref.wav",
-    "edison": "refs/edison_cylinder_ref.wav",
-    "wartime": "refs/wartime_broadcast_ref.wav",
-    "announcer": "refs/radio_announcer_ref.wav",
+    "newsreel":      "refs/newsreel_narrator_ref.wav",
+    "fireside":      "refs/fdr_fireside_ref.wav",
+    "radio_drama":   "refs/radio_drama_ref.wav",
+    "edison":        "refs/edison_cylinder_ref.wav",
+    "wartime":       "refs/wartime_broadcast_ref.wav",
+    "announcer":     "refs/radio_announcer_ref.wav",
 }
+
+
+def resolve_ref(preset, override, model_dir):
+    """Find the reference audio path for a preset, honoring an override and a model dir."""
+    if override:
+        return override
+    rel = PRESET_REFS.get(preset)
+    if not rel:
+        return None
+    if os.path.exists(rel):
+        return rel
+    if model_dir:
+        candidate = os.path.join(model_dir, rel)
+        if os.path.exists(candidate):
+            return candidate
+    return rel  # let caller surface a clear error if missing
 
 
 def generate_speech(
     text,
     preset="transatlantic",
     model_path=None,
+    vocab_path=None,
     ref_audio=None,
+    ref_text="",
     output_path="output.wav",
     device="cuda:0",
+    speed=0.9,
+    remove_silence=True,
 ):
-    """Generate vintage-styled speech from text"""
+    """Generate vintage-styled speech.
 
-    # Use preset reference audio if no custom ref provided
-    if ref_audio is None:
-        ref_audio = PRESET_REFS.get(preset)
-        if ref_audio and not os.path.exists(ref_audio):
-            # Check in model directory
-            if model_path:
-                model_dir = os.path.dirname(model_path)
-                ref_audio = os.path.join(model_dir, ref_audio)
+    Passing an explicit `ref_text` that matches `ref_audio` is recommended;
+    it skips F5-TTS's internal Whisper auto-transcribe and avoids a common
+    artifact where a half-second of the reference speaker's voice leaks
+    into the start of the generated output.
+    """
+    from f5_tts.api import F5TTS
 
-    print(f"VintageVoice Generation")
-    print(f"  Preset: {preset}")
-    print(f"  Text: {text[:80]}...")
-    print(f"  Reference: {ref_audio}")
-    print(f"  Output: {output_path}")
-
-    try:
-        from f5_tts.api import F5TTS
-
-        # Load model with vintage weights
-        tts = F5TTS(device=device)
-        if model_path and os.path.exists(model_path):
-            print(f"  Loading vintage weights: {model_path}")
-            from safetensors.torch import load_file
-            state_dict = load_file(model_path)
-            tts.model.load_state_dict(state_dict, strict=False)
-
-        # Generate with reference audio
-        wav, sr, _ = tts.infer(
-            ref_file=ref_audio,
-            ref_text="",  # Auto-transcribe reference
-            gen_text=text,
-            file_wave=output_path,
-        )
-
-        print(f"  Generated {len(wav)/sr:.1f}s of audio at {sr}Hz")
-        return output_path
-
-    except ImportError:
-        print("\n  F5-TTS not installed. Install: pip install f5-tts")
-        print("  For now, generating with reference audio cloning via torchaudio...")
-
-        # Fallback: basic generation pipeline demo
-        print("  (Full generation requires F5-TTS package)")
+    model_dir = os.path.dirname(model_path) if model_path else None
+    ref_audio = resolve_ref(preset, ref_audio, model_dir)
+    if not ref_audio or not os.path.exists(ref_audio):
+        print(f"ERROR: reference audio not found: {ref_audio}", file=sys.stderr)
+        print(f"  Preset: {preset}", file=sys.stderr)
+        print("  Provide --ref-audio <path/to/your.wav> or drop the preset file into refs/",
+              file=sys.stderr)
         return None
+
+    print("VintageVoice Generation")
+    print(f"  Preset:    {preset}")
+    print(f"  Text:      {text[:80]}{'...' if len(text) > 80 else ''}")
+    print(f"  Reference: {ref_audio}")
+    print(f"  Output:    {output_path}")
+    print(f"  Device:    {device}")
+
+    tts = F5TTS(
+        model="F5TTS_v1_Base",
+        ckpt_file=model_path or "",
+        vocab_file=vocab_path or "",
+        device=device,
+        use_ema=True,
+    )
+    if model_path:
+        print(f"  Vintage weights loaded: {model_path}")
+
+    wav, sr, _ = tts.infer(
+        ref_file=ref_audio,
+        ref_text=ref_text,
+        gen_text=text,
+        file_wave=output_path,
+        speed=speed,
+        remove_silence=remove_silence,
+    )
+    print(f"  Generated {len(wav)/sr:.2f}s of audio at {sr} Hz")
+    return output_path
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate vintage-styled speech")
     parser.add_argument("text", help="Text to speak")
-    parser.add_argument("--preset", default="transatlantic", choices=list(PRESET_REFS.keys()))
-    parser.add_argument("--model", default=None, help="Path to fine-tuned model weights")
-    parser.add_argument("--ref-audio", default=None, help="Custom reference audio clip")
+    parser.add_argument("--preset", default="transatlantic",
+                        choices=list(PRESET_REFS.keys()),
+                        help="Historical voice preset (default: transatlantic)")
+    parser.add_argument("--model", default=None,
+                        help="Path to fine-tuned VintageVoice checkpoint (.pt or .safetensors)")
+    parser.add_argument("--vocab", default=None,
+                        help="Path to vocab.txt matching the checkpoint")
+    parser.add_argument("--ref-audio", default=None, help="Override reference audio path")
+    parser.add_argument("--ref-text", default="",
+                        help="Transcript of the reference audio (recommended; "
+                             "skips Whisper auto-transcribe and reduces bleed)")
     parser.add_argument("--output", default="output.wav", help="Output WAV path")
     parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--speed", type=float, default=0.9,
+                        help="Playback speed; 0.9 suits measured vintage cadence")
+    parser.add_argument("--keep-silence", action="store_true",
+                        help="Do not trim leading/trailing silence")
     args = parser.parse_args()
 
     generate_speech(
         text=args.text,
         preset=args.preset,
         model_path=args.model,
+        vocab_path=args.vocab,
         ref_audio=args.ref_audio,
+        ref_text=args.ref_text,
         output_path=args.output,
         device=args.device,
+        speed=args.speed,
+        remove_silence=not args.keep_silence,
     )
 
 

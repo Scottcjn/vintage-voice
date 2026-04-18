@@ -61,20 +61,27 @@ All training data is **public domain**, sourced from [Archive.org](https://archi
 ```python
 from f5_tts.api import F5TTS
 
-# Load model
-tts = F5TTS(device="cuda:0")
+# IMPORTANT: pin the v1 architecture. VintageVoice was trained on
+# F5TTS_v1_Base; loading into F5TTS_Base (v0) silently produces
+# garbled output because F5-TTS's load_checkpoint uses strict=False.
+tts = F5TTS(
+    model="F5TTS_v1_Base",
+    ckpt_file="vintage-voice-transatlantic.safetensors",
+    vocab_file="vocab.txt",
+    device="cuda:0",
+    use_ema=True,
+)
 
-# Load vintage fine-tuned weights
-from safetensors.torch import load_file
-state_dict = load_file("vintage-voice-transatlantic.safetensors")
-tts.ema_model.load_state_dict(state_dict, strict=False)
-
-# Generate — YOUR voice reference + vintage delivery
+# Generate — YOUR voice reference + vintage delivery.
+# Passing ref_text (a transcript of ref_file) is recommended; it
+# skips the internal Whisper call and avoids a brief speaker-bleed
+# artifact at the start of the generated audio.
 wav, sr, _ = tts.infer(
-    ref_file="your_voice_reference.wav",   # Any modern voice
-    ref_text="",                            # Auto-transcribe
+    ref_file="your_voice_reference.wav",
+    ref_text="The exact words spoken in the reference clip.",
     gen_text="Good evening, ladies and gentlemen.",
-    speed=0.9,                              # Measured transatlantic pace
+    speed=0.9,              # Measured transatlantic pace
+    remove_silence=True,    # Trims edge silence that can carry bleed
 )
 ```
 
@@ -89,12 +96,15 @@ F5-TTS separates **voice identity** (from reference audio) from **speech style**
 
 | Spec | Value |
 |------|-------|
-| Base Model | F5-TTS v1 (337M params) |
+| Base Model | `F5TTS_v1_Base` (337M params) |
 | Architecture | Flow-matching DiT |
 | Training Data | 164 hours, 44,345 segments |
-| Sample Rate | 24kHz |
-| Training Hardware | 2x Tesla V100 32GB |
-| Training Time | ~7 days |
+| Vocab | 2545 tokens (custom, char-level); 167 unique chars used |
+| Sample Rate | 24 kHz |
+| Training Hardware | 2× Tesla V100 32GB |
+| Training | 50 epochs, 990,100 updates, LR 1e-5, batch 3200 frames/GPU |
+| Final Loss | ~0.47–0.65 (flow-matching) |
+| Training Time | ~10 days wall-clock |
 | License | MIT |
 
 ## Limitations

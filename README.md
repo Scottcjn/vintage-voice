@@ -101,23 +101,35 @@ All training data is **public domain** sourced from:
 ## Quick Start
 
 ```bash
-# Install
-pip install vintage-voice
+# Install F5-TTS (this is the inference engine)
+pip install f5-tts
 
-# Generate speech with transatlantic accent
-from vintage_voice import VintageVoice
+# Pull VintageVoice weights + vocab from HuggingFace
+#   (replace <repo> with the published release path)
+huggingface-cli download <repo> model_last.pt vocab.txt --local-dir ./vintage-voice
 
-model = VintageVoice("transatlantic")
-model.speak("One simply must attest one's hardware before the epoch settles, dahling.")
-
-# Use a specific historical voice preset
-model = VintageVoice("newsreel")
-model.speak("And now, from the laboratories of Elyan Labs, a breakthrough in computing!")
-
-# Clone from a reference recording
-model = VintageVoice.from_reference("path/to/fdr_fireside_chat.mp3")
-model.speak("The only thing we have to fear is fear itself.")
+# Generate transatlantic-styled speech with your own reference clip
+python scripts/generate.py "One simply must attest one's hardware before the epoch settles, dahling." \
+    --preset transatlantic \
+    --model ./vintage-voice/model_last.pt \
+    --vocab ./vintage-voice/vocab.txt \
+    --ref-audio my_voice_sample.wav \
+    --ref-text "Transcript of the reference clip goes here." \
+    --output out.wav
 ```
+
+> **⚠️ Architecture pin (important):** VintageVoice is fine-tuned on the
+> `F5TTS_v1_Base` architecture. Loading the checkpoint into the older
+> `F5TTS_Base` (v0) produces garbled output — F5-TTS's `load_checkpoint`
+> uses `strict=False`, so the architecture mismatch fails silently.
+> The scripts in this repo pin the right architecture; if you call the
+> F5-TTS API directly, pass `model="F5TTS_v1_Base"` explicitly.
+
+> **💡 Reference-text tip:** When you pass `--ref-audio`, also pass
+> `--ref-text` with a transcript of that clip. Leaving it blank makes
+> F5-TTS auto-transcribe the reference via Whisper, which can leak a
+> half-second of the reference speaker's voice into the start of the
+> generated output. Providing the transcript directly avoids that.
 
 ## Data Pipeline
 
@@ -187,12 +199,12 @@ python -m f5_tts.train.finetune_cli \
 | Audio preprocessing | **Done** — 44,345 segments |
 | Whisper transcription | **Done** — 43,876 transcribed |
 | F5-TTS dataset preparation | **Done** — Arrow format ready |
-| F5-TTS fine-tuning | **Training** — Epoch 1/50, loss 0.63 |
-| `transatlantic` preset | In Progress |
-| `newsreel` preset | Planned |
-| `fireside` preset | Planned |
-| `edison` preset | Planned |
-| HuggingFace model release | After training completes |
+| F5-TTS fine-tuning | **Done** — 50/50 epochs, 990,100 updates, final loss ~0.47-0.65 |
+| `transatlantic` preset | **Ready** — validated on Sophia reference voice |
+| `newsreel` preset | Planned — same base, new reference clip |
+| `fireside` preset | Planned — same base, new reference clip |
+| `edison` preset | Planned — earlier 89k-step checkpoint exists |
+| HuggingFace model release | **In preparation** — pruning checkpoint to EMA-only |
 | Python package | Planned |
 
 ## Commercial Applications

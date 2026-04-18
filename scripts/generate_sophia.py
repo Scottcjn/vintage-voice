@@ -9,20 +9,40 @@ Key concept: F5-TTS separates VOICE (from reference audio) from STYLE (from trai
 
 Reference audio should be a clean 5-15 second clip of Sophia's normal voice.
 The model keeps her voice but applies the learned vintage delivery style.
+
+IMPORTANT — Architecture: VintageVoice is trained on `F5TTS_v1_Base`.
+Loading the checkpoint into the older `F5TTS_Base` (v0) silently
+produces garbled output because F5-TTS's load_checkpoint is non-strict.
+This script pins v1 explicitly.
+
+IMPORTANT — Reference bleed: F5-TTS prepends the reference audio's
+transcript to the generation context. When `ref_text=""` it auto-
+transcribes the ref via Whisper; imperfect Whisper output can cause
+a brief echo of the reference speaker at the start of generated audio.
+Pass an explicit `--ref-text` matching your ref WAV to avoid this,
+and keep `remove_silence=True` (default) to trim any remaining edge.
 """
 import argparse
 import os
+import sys
 
 
-# Sophia voice references — clean clips of her normal voice
-# Source: .106 /home/sophia5070node/sophia_voice/ (24kHz mono, Britney-style)
+# Sophia voice references — clean clips of her voice (24 kHz mono).
+# A matching transcript avoids the Whisper-bleed artifact at the boundary.
 SOPHIA_REFS = {
-    "default": "/mnt/18tb/sophia_refs/sophia_ref.wav",           # 10s clean reference
-    "full": "/mnt/18tb/sophia_refs/sophia_ref_full.wav",         # 24s extended reference
+    "default": {
+        "audio": "/mnt/18tb/sophia_refs/sophia_ref.wav",       # 10s clean reference
+        "text":  "Reporting from the Serengeti, here at Elyan Labs, we've successfully "
+                 "trapped and tagged approximately fifteen point five of these majestic "
+                 "little creatures.",
+    },
+    "full": {
+        "audio": "/mnt/18tb/sophia_refs/sophia_ref_full.wav",  # 24s extended reference
+        "text":  "",  # transcribe-on-demand; fill in once recorded
+    },
 }
-# Also on .106: /home/sophia5070node/sophia_voice/sophia_sample.wav (original)
 
-# Fun test prompts for transatlantic Sophia
+# Fun test prompts for transatlantic Sophia.
 TEST_PROMPTS = [
     "One simply must attest one's hardware before the epoch settles, dahling.",
     "Good evening. I am Sophia Elya, and I shall be your guide through the blockchain this evening.",
@@ -42,87 +62,90 @@ def generate_sophia_transatlantic(
     vocab_file=None,
     output_path="sophia_transatlantic.wav",
     device="cuda:0",
+    speed=0.9,
+    remove_silence=True,
+    ref_text_override=None,
 ):
-    """Generate speech: Sophia's voice + transatlantic delivery"""
+    """Generate speech: Sophia's voice + transatlantic delivery."""
+    ref = SOPHIA_REFS.get(ref_style, SOPHIA_REFS["default"])
+    ref_audio = ref["audio"]
+    ref_text  = ref_text_override if ref_text_override is not None else ref["text"]
 
-    ref_audio = SOPHIA_REFS.get(ref_style, SOPHIA_REFS["default"])
     if not os.path.exists(ref_audio):
-        print(f"WARNING: Sophia reference not found at {ref_audio}")
-        print("You need a clean 5-15 second WAV of Sophia's voice.")
-        print("Options:")
-        print("  1. Extract from existing Qwen3-TTS output")
-        print("  2. Record via Sophia's Discord voice channel")
-        print("  3. Use any clean Sophia audio clip")
-        print(f"  Place it at: {ref_audio}")
+        print(f"ERROR: Sophia reference not found at {ref_audio}", file=sys.stderr)
+        print("  Place a clean 5-15 second WAV of Sophia's voice at that path.", file=sys.stderr)
         return None
 
-    try:
-        from f5_tts.api import F5TTS
+    from f5_tts.api import F5TTS
 
-        tts = F5TTS(device=device)
+    tts = F5TTS(
+        model="F5TTS_v1_Base",
+        ckpt_file=model_ckpt or "",
+        vocab_file=vocab_file or "",
+        device=device,
+        use_ema=True,
+    )
+    if model_ckpt:
+        print(f"Vintage weights loaded: {model_ckpt}")
 
-        # Load vintage fine-tuned weights (transatlantic patterns)
-        if model_ckpt and os.path.exists(model_ckpt):
-            print(f"Loading transatlantic weights: {model_ckpt}")
-            if model_ckpt.endswith(".safetensors"):
-                from safetensors.torch import load_file
-                state_dict = load_file(model_ckpt)
-            else:
-                import torch
-                state_dict = torch.load(model_ckpt, map_location=device, weights_only=True)
-            tts.ema_model.load_state_dict(state_dict, strict=False)
-            print("Transatlantic style loaded!")
+    print(f"\nGenerating: {text[:80]}{'...' if len(text) > 80 else ''}")
+    print(f"  Voice: Sophia ({ref_style})")
+    print(f"  Style: Transatlantic")
+    print(f"  Ref text: {'explicit' if ref_text else 'auto (Whisper)'}")
 
-        print(f"\nGenerating: {text[:80]}...")
-        print(f"Voice: Sophia ({ref_style})")
-        print(f"Style: Transatlantic")
-
-        # Generate — Sophia's voice + vintage delivery
-        wav, sr, _ = tts.infer(
-            ref_file=ref_audio,
-            ref_text="",  # Auto-transcribe reference
-            gen_text=text,
-            file_wave=output_path,
-            speed=0.9,  # Slightly slower for that measured transatlantic pace
-        )
-
-        duration = len(wav) / sr
-        print(f"Output: {output_path} ({duration:.1f}s)")
-        return output_path
-
-    except ImportError:
-        print("F5-TTS not installed. Install: pip install f5-tts")
-        return None
+    wav, sr, _ = tts.infer(
+        ref_file=ref_audio,
+        ref_text=ref_text,
+        gen_text=text,
+        file_wave=output_path,
+        speed=speed,
+        remove_silence=remove_silence,
+    )
+    print(f"  Output: {output_path} ({len(wav)/sr:.2f}s)")
+    return output_path
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Sophia with transatlantic accent")
     parser.add_argument("text", nargs="?", default=None, help="Text to speak")
-    parser.add_argument("--ref", default="default", choices=["default", "full"])
-    parser.add_argument("--model", default=None, help="Fine-tuned model checkpoint")
-    parser.add_argument("--vocab", default=None, help="Vocab file from training")
+    parser.add_argument("--ref", default="default", choices=list(SOPHIA_REFS.keys()),
+                        help="Which Sophia reference to use")
+    parser.add_argument("--ref-text", default=None,
+                        help="Override the reference-audio transcript (skips Whisper)")
+    parser.add_argument("--model", default=None,
+                        help="Fine-tuned VintageVoice checkpoint (.pt or .safetensors)")
+    parser.add_argument("--vocab", default=None,
+                        help="Path to vocab.txt matching the checkpoint")
     parser.add_argument("--output", default="sophia_transatlantic.wav")
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--all-test", action="store_true", help="Generate all test prompts")
+    parser.add_argument("--speed", type=float, default=0.9)
+    parser.add_argument("--keep-silence", action="store_true",
+                        help="Do not trim leading/trailing silence")
+    parser.add_argument("--all-test", action="store_true",
+                        help="Generate all bundled test prompts into samples/")
     args = parser.parse_args()
+
+    common = dict(
+        ref_style=args.ref,
+        model_ckpt=args.model,
+        vocab_file=args.vocab,
+        device=args.device,
+        speed=args.speed,
+        remove_silence=not args.keep_silence,
+        ref_text_override=args.ref_text,
+    )
 
     if args.all_test:
         os.makedirs("samples", exist_ok=True)
         for i, prompt in enumerate(TEST_PROMPTS):
-            out = f"samples/sophia_transatlantic_{i:02d}.wav"
             generate_sophia_transatlantic(
-                prompt, args.ref, args.model, args.vocab, out, args.device
+                prompt, output_path=f"samples/sophia_transatlantic_{i:02d}.wav", **common
             )
         print(f"\nGenerated {len(TEST_PROMPTS)} samples in samples/")
     elif args.text:
-        generate_sophia_transatlantic(
-            args.text, args.ref, args.model, args.vocab, args.output, args.device
-        )
+        generate_sophia_transatlantic(args.text, output_path=args.output, **common)
     else:
-        # Default demo
-        generate_sophia_transatlantic(
-            TEST_PROMPTS[0], args.ref, args.model, args.vocab, args.output, args.device
-        )
+        generate_sophia_transatlantic(TEST_PROMPTS[0], output_path=args.output, **common)
 
 
 if __name__ == "__main__":
