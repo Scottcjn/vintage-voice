@@ -27,18 +27,19 @@ import os
 import sys
 
 
-# Sophia voice references — clean clips of her voice (24 kHz mono).
-# A matching transcript avoids the Whisper-bleed artifact at the boundary.
+# This script is a *Sophia-specific example* — it expects the caller to
+# supply the reference audio and its transcript via CLI flags. It does
+# not ship with any Sophia audio (that's Elyan Labs internal). If you
+# want to try the same "same-voice, vintage-delivery" trick with your
+# own speaker, pass --ref-audio and --ref-text explicitly.
+#
+# The SOPHIA_REFS entry below is kept only as a sample structure; the
+# `audio` paths must exist on your local filesystem for the script to
+# run, and providing --ref-audio at the CLI always overrides them.
 SOPHIA_REFS = {
     "default": {
-        "audio": "/mnt/18tb/sophia_refs/sophia_ref.wav",       # 10s clean reference
-        "text":  "Reporting from the Serengeti, here at Elyan Labs, we've successfully "
-                 "trapped and tagged approximately fifteen point five of these majestic "
-                 "little creatures.",
-    },
-    "full": {
-        "audio": "/mnt/18tb/sophia_refs/sophia_ref_full.wav",  # 24s extended reference
-        "text":  "",  # transcribe-on-demand; fill in once recorded
+        "audio": "",  # user must provide via --ref-audio
+        "text":  "",  # user must provide via --ref-text
     },
 }
 
@@ -57,6 +58,8 @@ TEST_PROMPTS = [
 
 def generate_sophia_transatlantic(
     text,
+    ref_audio=None,
+    ref_text_override=None,
     ref_style="default",
     model_ckpt=None,
     vocab_file=None,
@@ -64,17 +67,35 @@ def generate_sophia_transatlantic(
     device="cuda:0",
     speed=0.9,
     remove_silence=True,
-    ref_text_override=None,
 ):
-    """Generate speech: Sophia's voice + transatlantic delivery."""
-    ref = SOPHIA_REFS.get(ref_style, SOPHIA_REFS["default"])
-    ref_audio = ref["audio"]
-    ref_text  = ref_text_override if ref_text_override is not None else ref["text"]
+    """Generate speech: your speaker's voice + vintage delivery.
 
-    if not os.path.exists(ref_audio):
-        print(f"ERROR: Sophia reference not found at {ref_audio}", file=sys.stderr)
-        print("  Place a clean 5-15 second WAV of Sophia's voice at that path.", file=sys.stderr)
+    Pass `ref_audio` (path to your clean 5-15s WAV) and `ref_text_override`
+    (its transcript) explicitly. The `ref_style` argument is kept only for
+    backward compatibility and exists as a scaffold for future preset bundles.
+    """
+    ref = SOPHIA_REFS.get(ref_style, SOPHIA_REFS["default"])
+    ref_audio = ref_audio or ref.get("audio") or ""
+    ref_text  = ref_text_override if ref_text_override is not None else ref.get("text", "")
+
+    if not ref_audio or not os.path.exists(ref_audio):
+        print(f"ERROR: reference audio not found: {ref_audio or '(none provided)'}",
+              file=sys.stderr)
+        print("  Pass --ref-audio <path/to/your_ref.wav> pointing to a clean 5-15s",
+              file=sys.stderr)
+        print("  mono 24kHz WAV of your target speaker.", file=sys.stderr)
         return None
+
+    if not ref_text:
+        print("", file=sys.stderr)
+        print("⚠️  VintageVoice: ref_text is empty — will auto-transcribe via Whisper.",
+              file=sys.stderr)
+        print("   This occasionally leaks ~0.5s of the reference speaker's voice into",
+              file=sys.stderr)
+        print("   the start of generated audio. To avoid it, pass --ref-text with the",
+              file=sys.stderr)
+        print("   exact transcript of your reference clip.", file=sys.stderr)
+        print("", file=sys.stderr)
 
     from f5_tts.api import F5TTS
 
@@ -106,12 +127,16 @@ def generate_sophia_transatlantic(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Sophia with transatlantic accent")
+    parser = argparse.ArgumentParser(
+        description="Apply VintageVoice transatlantic delivery to your own speaker reference")
     parser.add_argument("text", nargs="?", default=None, help="Text to speak")
-    parser.add_argument("--ref", default="default", choices=list(SOPHIA_REFS.keys()),
-                        help="Which Sophia reference to use")
+    parser.add_argument("--ref-audio", default=None,
+                        help="Path to a clean 5-15s mono 24kHz WAV of your target speaker")
     parser.add_argument("--ref-text", default=None,
-                        help="Override the reference-audio transcript (skips Whisper)")
+                        help="Transcript of your reference clip (recommended; "
+                             "skips Whisper auto-transcribe and reduces bleed)")
+    parser.add_argument("--ref", default="default", choices=list(SOPHIA_REFS.keys()),
+                        help="Preset bundle (placeholder; use --ref-audio / --ref-text instead)")
     parser.add_argument("--model", default=None,
                         help="Fine-tuned VintageVoice checkpoint (.pt or .safetensors)")
     parser.add_argument("--vocab", default=None,
@@ -126,13 +151,14 @@ def main():
     args = parser.parse_args()
 
     common = dict(
+        ref_audio=args.ref_audio,
+        ref_text_override=args.ref_text,
         ref_style=args.ref,
         model_ckpt=args.model,
         vocab_file=args.vocab,
         device=args.device,
         speed=args.speed,
         remove_silence=not args.keep_silence,
-        ref_text_override=args.ref_text,
     )
 
     if args.all_test:

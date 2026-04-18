@@ -76,6 +76,17 @@ def generate_speech(
               file=sys.stderr)
         return None
 
+    if not ref_text:
+        print("", file=sys.stderr)
+        print("⚠️  VintageVoice: ref_text is empty — will auto-transcribe via Whisper.",
+              file=sys.stderr)
+        print("   This occasionally leaks ~0.5s of the reference speaker's voice into",
+              file=sys.stderr)
+        print("   the start of generated audio. To avoid it, pass --ref-text with the",
+              file=sys.stderr)
+        print("   exact transcript of your reference clip.", file=sys.stderr)
+        print("", file=sys.stderr)
+
     print("VintageVoice Generation")
     print(f"  Preset:    {preset}")
     print(f"  Text:      {text[:80]}{'...' if len(text) > 80 else ''}")
