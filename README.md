@@ -75,7 +75,7 @@ cd vintage-voice
 
 # 3. Pull weights + vocab from Hugging Face (once the release is published)
 pip install -U huggingface_hub
-huggingface-cli download Scottcjn/vintage-voice \
+huggingface-cli download AutomatedJanitor/vintage-voice \
     model.safetensors vocab.txt \
     --local-dir ./weights
 
@@ -354,7 +354,7 @@ require world-class budgets.
 
 ## Links
 
-- 🤗 [HuggingFace model](https://huggingface.co/Scottcjn/vintage-voice) *(v0.1.0 pending)*
+- 🤗 [HuggingFace model](https://huggingface.co/AutomatedJanitor/vintage-voice)
 - 🐙 [GitHub repo](https://github.com/Scottcjn/vintage-voice)
 - 🌐 [Elyan Labs](https://elyanlabs.ai)
 - ⛓️ [RustChain](https://rustchain.org) — proof-of-antiquity blockchain
