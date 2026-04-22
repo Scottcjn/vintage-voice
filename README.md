@@ -195,7 +195,7 @@ reference clips steer the output toward different period styles.
 | `newsreel` | 1930s–1950s | Movietone, Pathé, March of Time | Planned — needs curated ref clip |
 | `fireside` | 1933–1944 | FDR Fireside Chats | Planned — needs curated ref clip |
 | `radio_drama` | 1930s–1950s | The Shadow, Mercury Theatre | Planned — needs curated ref clip |
-| `edison` | 1888–1920s | Edison cylinder recordings | Separate 89k-step checkpoint available on request |
+| `edison` | 1888–1920s | Edison cylinder recordings | **Not in v0.1.0 training corpus** (see Known Limitations); specialist fine-tune in progress for v0.1.x |
 | `wartime` | 1939–1945 | Churchill, Murrow | Planned — needs curated ref clip |
 | `announcer` | 1930s–1960s | Radio commercials, station IDs | Planned — needs curated ref clip |
 | `cajun_french` | 1880s–present | Family + field recordings | **Collecting** — see [Cajun French Preservation](#cajun-french-preservation-unesco-endangered) |
@@ -232,7 +232,7 @@ similar archives of pre-1955 recordings.
 | [Prelinger Archives](https://archive.org/details/prelinger) | Newsreels, educational films | 1930s–1960s | Public Domain |
 | [Old Time Radio](https://archive.org/details/oldtimeradio) | Radio dramas, comedies | 1930s–1950s | Public Domain |
 | [FDR Presidential Library](https://archive.org/search?query=creator%3ARoosevelt) | Fireside Chats, speeches | 1933–1944 | Public Domain |
-| [Edison Cylinders](https://archive.org/details/edison) | Earliest recordings | 1888–1920s | Public Domain |
+| *~~Edison Cylinders~~* | *(planned for v0.1.x — **not in v0.1.0 corpus**, see Known Limitations)* | 1888–1920s | Public Domain |
 | [LibriVox](https://librivox.org) | Vintage audiobook recordings | Various | Public Domain |
 | [Library of Congress](https://loc.gov/collections) | Historical audio | 1900s–1950s | Public Domain |
 
@@ -263,6 +263,26 @@ similar archives of pre-1955 recordings.
   not with modern aesthetic-MOS predictors.
 - **No Cajun French / endangered-language output yet.** Data collection
   is ongoing; see the preservation section below.
+- **Edison cylinders were not in the v0.1.0 corpus.** During a 2026-04-22
+  audit we discovered that the five files in `vintage_voice/edison/`
+  (`EdisonCylinders1.mp3`, `EdisonAmberolRecordings.mp3`, etc.) were
+  **0-byte placeholder files left over from an interrupted download** —
+  never actually populated with audio. The preset and source-table rows
+  for `edison` in earlier revisions of this README implied training
+  exposure that the v0.1.0 model does not have. A real Edison
+  specialist fine-tune (using verified cylinders from Archive.org's
+  cylinder collection) is in progress for a v0.1.x release. An earlier
+  `edison_model_89000.pt` checkpoint from 2026-04-09 exists on our
+  training rig but was trained on the same empty inputs and has no
+  meaningful Edison-era signal; it should be considered deprecated.
+- **Acoustic character is an ffmpeg post-process, not a training
+  outcome.** F5-TTS uses the Vocos vocoder, which outputs clean 24 kHz
+  waveforms regardless of training-data acoustic properties. Training
+  on cylinder, newsreel, or wartime-radio audio teaches the model the
+  *delivery patterns* (pace, stress, cadence), but the crackle, narrow
+  bandwidth, AM-radio compression, and other period-acoustic artifacts
+  have to be added after synthesis. The `scripts/presets/` directory
+  contains per-era ffmpeg filter chains for this.
 
 ---
 
