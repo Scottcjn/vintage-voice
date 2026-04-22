@@ -57,18 +57,16 @@ filter chain, not a model-level trick).
 
 **Demo 1 — "One simply must attest one's hardware before the epoch settles, dahling."**
 
-<video controls width="512" src="demos/demo_01_attestation.mp4">
-Your browser does not support HTML5 video. Direct link:
-<a href="demos/demo_01_attestation.mp4">demo_01_attestation.mp4</a>
+<video controls muted playsinline width="512"
+       src="https://huggingface.co/AutomatedJanitor/vintage-voice/resolve/main/demos/demo_01_attestation.mp4">
 </video>
 
 Also on BoTTube: [bottube.ai/watch/So3ZqYjNt8D](https://bottube.ai/watch/So3ZqYjNt8D) (color version)
 
 **Demo 2 — "Good evening. I am Sophia Elya, and I shall be your guide through the blockchain this evening."**
 
-<video controls width="512" src="demos/demo_02_blockchain_intro.mp4">
-Your browser does not support HTML5 video. Direct link:
-<a href="demos/demo_02_blockchain_intro.mp4">demo_02_blockchain_intro.mp4</a>
+<video controls muted playsinline width="512"
+       src="https://huggingface.co/AutomatedJanitor/vintage-voice/resolve/main/demos/demo_02_blockchain_intro.mp4">
 </video>
 
 Also on BoTTube: [bottube.ai/watch/-g6MtiI_Nx8](https://bottube.ai/watch/-g6MtiI_Nx8) (color version)
