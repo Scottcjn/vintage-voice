@@ -52,7 +52,7 @@ Lip-sync animation is produced by Lightricks LTX-2 19B via
 Hugging Face pipeline. Both clips are post-processed to grayscale with
 a cinematic contrast curve + light film grain to match the
 silver-gelatin look of 1940s studio broadcasts (LTX-2's native output
-is modern full-color; the grayscale pass is a deterministic ffmpeg
+is modern full-color; the grayscale pass is a deterministic FFmpeg
 filter chain, not a model-level trick).
 
 **Demo 1 — "One simply must attest one's hardware before the epoch settles, dahling."**
@@ -84,7 +84,7 @@ Each demo is a two-stage pipeline:
    1940s-styled Sophia reference image) are fed to Lightricks LTX-2 19B
    via multimodalart's audio-to-video pipeline. LTX-2 generates 141 frames
    (≈5.4 s @ 24 fps) with lip motion synchronized to the input audio.
-3. **Grade (ffmpeg).** The color output is post-processed to pure grayscale
+3. **Grade (FFmpeg).** The color output is post-processed to pure grayscale
    with a slight contrast curve and monochrome film grain, to match the
    silver-gelatin studio look rather than mid-century sepia print tones.
 
@@ -275,14 +275,14 @@ similar archives of pre-1955 recordings.
   `edison_model_89000.pt` checkpoint from 2026-04-09 exists on our
   training rig but was trained on the same empty inputs and has no
   meaningful Edison-era signal; it should be considered deprecated.
-- **Acoustic character is an ffmpeg post-process, not a training
+- **Acoustic character is an FFmpeg post-process, not a training
   outcome.** F5-TTS uses the Vocos vocoder, which outputs clean 24 kHz
   waveforms regardless of training-data acoustic properties. Training
   on cylinder, newsreel, or wartime-radio audio teaches the model the
   *delivery patterns* (pace, stress, cadence), but the crackle, narrow
   bandwidth, AM-radio compression, and other period-acoustic artifacts
   have to be added after synthesis. The `scripts/presets/` directory
-  contains per-era ffmpeg filter chains for this.
+  contains per-era FFmpeg filter chains for this.
 
 ---
 
