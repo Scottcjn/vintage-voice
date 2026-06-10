@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 Test generation using NON-EMA checkpoint.
 F5-TTS's EMA (exponential moving average) keeps weights close to pretrained,

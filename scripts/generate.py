@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Speech Generation with Historical Voice Presets
 

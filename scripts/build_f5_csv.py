@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Build F5-TTS training CSV from Whisper transcriptions."""
 import json
 import os

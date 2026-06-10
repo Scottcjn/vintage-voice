@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Two-Stage Pipeline
 Stage 1: F5-TTS generates speech with vintage reference (Hepburn/Welles)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Simple Whisper Transcription (no torchcodec dependency)
 Uses openai-whisper or faster-whisper directly instead of transformers pipeline.

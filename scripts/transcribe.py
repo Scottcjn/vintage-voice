@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Whisper Transcription Pipeline
 Transcribes vintage audio recordings and creates text-audio alignment data.

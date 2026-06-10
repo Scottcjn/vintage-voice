@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Archive.org Public Domain Audio Downloader
 Downloads historical recordings for TTS training data.

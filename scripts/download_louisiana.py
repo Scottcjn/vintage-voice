@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Louisiana Heritage Audio Downloader
 Downloads public domain Cajun French, Creole, and Louisiana accent recordings.

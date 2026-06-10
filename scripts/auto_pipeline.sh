@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 # Auto-pipeline: waits for preprocessing, then runs steps 2-3
 BASE=/mnt/18tb
 PROCESSED=$BASE/vintage_voice_processed

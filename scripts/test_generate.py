@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Quick test generation with current checkpoint — runs on cuda:1 while training uses cuda:0"""
 import torch
 import os

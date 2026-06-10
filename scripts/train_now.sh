@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 # VintageVoice — Train NOW on 37K snapshot
 # Runs on cuda:0 while preprocessing continues on CPU
 #

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 from scripts.transatlantic_spelling import respell_transatlantic
 
 

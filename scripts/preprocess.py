@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — Audio Preprocessing Pipeline
 Converts raw archive.org audio into training-ready segments.

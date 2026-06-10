@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 # VintageVoice — Edison Preset Training on RTX 5070
 # Machine: .106 (sophia5070node, RTX 5070 12GB)
 #

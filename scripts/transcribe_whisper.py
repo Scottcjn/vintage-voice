@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — GPU-Accelerated Whisper Transcription
 Uses transformers pipeline on V100 for fast batch transcription.

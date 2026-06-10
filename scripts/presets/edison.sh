@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # VintageVoice — Edison Cylinder preset (1888-1920s)
 #
 # Post-process ffmpeg chain that transforms clean VintageVoice TTS output

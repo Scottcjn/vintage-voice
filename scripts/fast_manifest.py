@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Fast manifest builder — uses soundfile instead of ffprobe"""
 import soundfile as sf
 import os

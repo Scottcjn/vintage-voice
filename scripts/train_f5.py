@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """
 VintageVoice — F5-TTS Fine-Tuning for Historical Speech Patterns
 

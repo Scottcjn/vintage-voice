@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 # VintageVoice — Full Training Pipeline
 # Run on .136 (2x V100 32GB)
 #
