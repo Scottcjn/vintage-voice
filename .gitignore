@@ -11,3 +11,21 @@ __pycache__/
 *.mp3
 *.ogg
 venv/
+
+# --- hardened 2026-06-14: exclude all large artifacts ---
+data/
+exp/
+runs/
+models/
+tools_cpu/
+*.pt
+*.onnx
+*.arrow
+*.tar
+*.parquet
+*.gguf
+*.safetensors
+*.bin
+*.flac
+*.webm
+backup_out_*/

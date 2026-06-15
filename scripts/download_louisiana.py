@@ -9,11 +9,17 @@ Louisiana Creole has ~10,000 speakers. These voices are disappearing NOW.
 """
 import subprocess
 import os
+import sys
 import json
+import shutil
 import urllib.request
 import urllib.parse
 
-AUDIO_BASE = "/mnt/18tb/louisiana_voice"
+# Override with VINTAGE_VOICE_DATA when the 18TB machine (.136) is offline
+AUDIO_BASE = os.environ.get("VINTAGE_VOICE_DATA", "/mnt/18tb/louisiana_voice")
+
+# Stop downloading if free space on the target drops below this (GB)
+MIN_FREE_GB = int(os.environ.get("VINTAGE_VOICE_MIN_FREE_GB", "60"))
 
 COLLECTIONS = {
     "cajun_french": {
@@ -79,19 +85,24 @@ COLLECTIONS = {
 }
 
 
-def search_archive(query, limit=50):
+def search_archive(query, limit=50, retries=5):
     params = urllib.parse.urlencode({
         "q": query, "output": "json", "rows": limit,
         "fl[]": "identifier,title,year",
     })
     url = f"https://archive.org/advancedsearch.php?{params}"
-    try:
-        with urllib.request.urlopen(url, timeout=30) as resp:
-            data = json.loads(resp.read())
-            return data.get("response", {}).get("docs", [])
-    except Exception as e:
-        print(f"  Search error: {e}")
-        return []
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                data = json.loads(resp.read())
+                return data.get("response", {}).get("docs", [])
+        except Exception as e:
+            wait = 30 * (attempt + 1)
+            print(f"  Search error (attempt {attempt+1}/{retries}): {e} — retrying in {wait}s")
+            import time
+            time.sleep(wait)
+    print(f"  Search FAILED after {retries} attempts: {query}")
+    return []
 
 
 def download_item(identifier, dest_dir):
@@ -108,9 +119,23 @@ def download_item(identifier, dest_dir):
         print(f"    Timeout: {identifier}")
 
 
+def free_gb(path):
+    return shutil.disk_usage(path).free / 1e9
+
+
 def main():
+    # Optional: limit to specific collections, e.g.
+    #   download_louisiana.py cajun_french lomax_louisiana
+    selected = sys.argv[1:] or list(COLLECTIONS.keys())
+    unknown = [s for s in selected if s not in COLLECTIONS]
+    if unknown:
+        print(f"Unknown collections: {unknown}")
+        print(f"Available: {', '.join(COLLECTIONS.keys())}")
+        sys.exit(1)
+
     total = 0
-    for name, cfg in COLLECTIONS.items():
+    for name in selected:
+        cfg = COLLECTIONS[name]
         dest = os.path.join(AUDIO_BASE, cfg["dir"])
         os.makedirs(dest, exist_ok=True)
 
@@ -121,6 +146,11 @@ def main():
         print(f"Found {len(items)} items")
 
         for i, item in enumerate(items):
+            if free_gb(AUDIO_BASE) < MIN_FREE_GB:
+                print(f"\nSTOP: free space below {MIN_FREE_GB}GB on {AUDIO_BASE}")
+                print(f"Total items downloaded: {total}")
+                sys.exit(2)
+
             ident = item.get("identifier", "")
             title = item.get("title", "?")[:60]
             year = item.get("year", "?")
