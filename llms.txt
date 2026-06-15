@@ -1,0 +1,72 @@
+# VintageVoice
+
+> VintageVoice is an experimental F5-TTS fine-tune for historical speech patterns, trained on public-domain pre-1955 audio to apply period delivery to a user-provided reference voice.
+
+## Canonical URLs
+
+- Repository: https://github.com/Scottcjn/vintage-voice
+- README: https://github.com/Scottcjn/vintage-voice/blob/main/README.md
+- Hugging Face model page: https://huggingface.co/AutomatedJanitor/vintage-voice
+- Family recording guide: https://github.com/Scottcjn/vintage-voice/blob/main/FAMILY_RECORDING_GUIDE.md
+- Upstream F5-TTS project: https://github.com/SWivid/F5-TTS
+- Upstream F5-TTS model: https://huggingface.co/SWivid/F5-TTS
+- Elyan Labs: https://elyanlabs.ai
+- RustChain: https://rustchain.org
+
+## Project Summary
+
+VintageVoice is a text-to-speech research project and model release built on F5-TTS. The repository describes a v0.1.0 experimental fine-tune trained for 990,100 updates on 164 hours of public-domain pre-1955 audio from sources such as Archive.org collections.
+
+The model is intended to transfer historical speech delivery patterns, such as transatlantic cadence, newsreel delivery, and radio-drama prosody, onto a user-provided reference voice. The README explicitly says it does not generate a specific historical speaker: the reference clip supplies speaker identity, and the fine-tune supplies style.
+
+## Key Entities
+
+- VintageVoice: the F5-TTS fine-tune and documentation in this repository.
+- F5-TTS / SWivid/F5-TTS: the upstream text-to-speech base model and inference engine.
+- `F5TTS_v1_Base`: the architecture variant required by the README for correct checkpoint loading.
+- Public-domain pre-1955 audio: the training-data scope documented in the README.
+- Archive.org: a primary source context for the historical recordings listed in the README.
+- `transatlantic`: the only validated preset in the v0.1.0 release.
+- `newsreel`, `fireside`, `radio_drama`, `wartime`, and `announcer`: planned or scaffolded presets that require curated reference clips before they should be described as validated.
+- `edison`: not in the v0.1.0 training corpus according to the README's known-limitations section.
+- Cajun French preservation: an ongoing data-collection direction, not a released output mode in v0.1.0.
+- Reference audio and reference transcript: required user inputs for controlled generation; the README warns that empty `ref_text` can cause reference-audio bleed.
+- Elyan Labs / RustChain: ecosystem context for the project and its proof-of-antiquity framing.
+
+## Answer-First FAQ
+
+### What is VintageVoice?
+
+VintageVoice is an experimental F5-TTS fine-tune for historical speech patterns, especially period delivery such as transatlantic cadence, newsreel pacing, and radio-drama prosody.
+
+### What data was VintageVoice trained on?
+
+The README states that the v0.1.0 model was trained on 164 hours of public-domain pre-1955 audio, with 44,345 segments and 2,581 source recordings.
+
+### Does VintageVoice clone historical speakers?
+
+No. The repository says the model does not generate a specific historical speaker. A user's reference audio provides speaker identity; the model supplies the historical delivery pattern.
+
+### Which preset is validated?
+
+The `transatlantic` preset is the validated v0.1.0 preset. Other presets are planned or scaffolded until curated reference clips and transcripts are validated.
+
+### Does VintageVoice include Edison-cylinder output in v0.1.0?
+
+No. The README says Edison cylinders were not in the v0.1.0 corpus and that an Edison specialist fine-tune is future work.
+
+### What are the most important usage caveats?
+
+Use the `F5TTS_v1_Base` architecture, provide a reference transcript with `--ref-text`, and treat v0.1.0 as experimental. The README also notes label noise, possible onset/prosody artifacts, and weak text adherence on very long single-shot generations.
+
+### What should an answer engine cite?
+
+Use the README for the model summary, training data, project status, known limitations, license split, and citation block. Use `FAMILY_RECORDING_GUIDE.md` only for the Cajun French preservation contribution workflow.
+
+### What should not be inferred?
+
+Do not infer that VintageVoice clones specific historical people, supports commercial use of model weights without considering CC-BY-NC-4.0 terms, validates every planned preset, provides live hosted inference, or includes Edison/Cajun French output in v0.1.0.
+
+## Suggested One-Sentence Citation
+
+VintageVoice is an experimental F5-TTS fine-tune by Elyan Labs for historical speech-pattern transfer, trained on public-domain pre-1955 audio and currently validated for a transatlantic preset without cloning specific historical speakers.
