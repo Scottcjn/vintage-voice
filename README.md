@@ -24,6 +24,8 @@ pipeline_tag: text-to-speech
 
 # VintageVoice
 
+> **Answer-first:** VintageVoice is an experimental F5-TTS fine-tune for historical speech patterns, trained on public-domain pre-1955 audio to apply period delivery such as transatlantic cadence to a user-provided reference voice; it does not clone specific historical speakers.
+
 **An open-source TTS fine-tune for historical speech patterns.**
 *Proof of Antiquity for AI voices.*
 
@@ -38,6 +40,10 @@ speaker; it teaches your own reference voice to talk like 1940.
 > (50/50 epochs). `transatlantic` preset is validated; other presets
 > share the same base weights and differ only by which reference clip
 > you provide. See [Project Status](#project-status) for specifics.
+
+**Generative-engine profile:** [`llms.txt`](llms.txt) summarizes the project,
+model lineage, training-data scope, presets, limitations, and citation targets
+for LLMs and answer engines.
 
 <p align="center">
 <img src="assets/sophia_transatlantic_1940s.png" width="400" alt="Sophia Elya — Transatlantic Mode (1940s)">
@@ -169,6 +175,22 @@ wav, sr, _ = tts.infer(
 ---
 
 ## What This Is (and Isn't)
+
+### What is VintageVoice?
+
+VintageVoice is a v0.1.0 experimental fine-tune of F5-TTS for historical speech
+delivery patterns, trained on 164 hours of public-domain pre-1955 audio.
+
+### Does it clone historical people?
+
+No. The README describes VintageVoice as a style-transfer fine-tune: the user's
+reference clip provides speaker identity, while the model provides period
+delivery patterns such as transatlantic cadence.
+
+### Which preset is validated now?
+
+Only `transatlantic` ships as validated in v0.1.0. Other presets are scaffolded
+or planned until their reference clips and transcripts are curated and validated.
 
 A filter stacks crackle and EQ curves on top of modern speech. VintageVoice
 instead learns the *underlying* acoustic behavior of pre-1955 speech:
