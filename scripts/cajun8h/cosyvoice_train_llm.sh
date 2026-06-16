@@ -4,7 +4,7 @@
 # =============================================================================
 # Trains ONLY the `llm` model (not flow / hifigan) on the prepared Cajun data.
 #   - Single GPU, torch_ddp (NOT deepspeed)
-#   - max_frames_in_batch reduced 2000 -> 1200 for 8GB headroom (cosyvoice2_8gb.yaml)
+#   - max_frames_in_batch set to 800 for 8GB headroom (matched with filter max_length to prevent OOM)
 #   - Pre-extracted speaker embeddings + speech tokens already baked into parquet
 #
 # Generated for the vintage-voice Cajun finetune. DO NOT auto-run blindly --

@@ -139,8 +139,8 @@ tokenize: !name:cosyvoice.dataset.processor.tokenize
     get_tokenizer: !ref <get_tokenizer>
     allowed_special: !ref <allowed_special>
 filter: !name:cosyvoice.dataset.processor.filter
-    max_length: 6000
-    min_length: 100
+    max_length: 800
+    min_length: 50
     token_max_length: 200
     token_min_length: 1
 resample: !name:cosyvoice.dataset.processor.resample
@@ -174,7 +174,7 @@ batch: !name:cosyvoice.dataset.processor.batch
     batch_type: 'dynamic'
     max_frames_in_batch: 800
 padding: !name:cosyvoice.dataset.processor.padding
-    use_spk_embedding: False # change to True during sft
+    use_spk_embedding: True # change to True during sft
 
 
 # dataset processor pipeline
