@@ -76,9 +76,9 @@ invitation* — not as targets:
 
 ## How to start a conversation
 
-Open an issue on this repo with the label **`partnership`**, or contact the
-maintainers directly. Tell us as much or as little as you want. There is no cost,
-and there is no obligation — the door opens from your side.
+Open an issue on this repo with the label **`partnership`**, or contact us
+directly at **scott@elyanlabs.ai**. Tell us as much or as little as you want.
+There is no cost, and there is no obligation — the door opens from your side.
 
 ---
 
