@@ -15,8 +15,12 @@ LEXICON = {
     # Cajun fast speech swallows the -ment nasal: "comment ça va" said quick
     # lands on top of the surname "Comeaux" (kɔ-mo). Respell to elide so
     # CosyVoice blends it instead of enunciating the textbook ko-MAH(n).
-    "comment ça va":  "com' ça va",
-    "comment ca va":  "com' ça va",   # ascii-typed variant
+    # fast Cajun: "comment ça" collapses to the surname Comeaux (ko-MOH) -> spell
+    # it literally as the last name so CosyVoice says "ko-mo sa va", not "kom-sa-va".
+    "comment ça va":  "Comeaux ça va",
+    "comment ca va":  "Comeaux ça va",   # ascii-typed variant
+    "comment ça":     "Comeaux",
+    "comment ca":     "Comeaux",
     "quand même":     "quan mêm",     # Cajun "ka-MEM" = anyhow / anyway / all the same
     "quand meme":     "quan mêm",     # ascii-typed variant
     "comme ci comme ça": "comme ci comme ça",  # kom-see-kom-sah = so-so / middling
@@ -82,6 +86,9 @@ LEXICON = {
     "traiteur":     "treteur",
     "veillée":      "veillé",
     "cocodril":     "cocodri",
+    "cocodrie":     "cocodri",         # co-co-DREE — Cajun for alligator (colonial French
+    "alligator":    "cocodri",         #   saw gators, called them crocodiles — close cousin)
+    "alligators":   "cocodris",
     "chevrette":    "chevrette",
     "barbue":       "barbu",
     "nonc":         "nonk",
@@ -90,6 +97,55 @@ LEXICON = {
     "couche-couche":"couche-couche",   # koosh-koosh — fried cornmeal breakfast
     "coush-coush":  "couche-couche",
     "cooshcoosh":   "couche-couche",
+    "tracas":       "traca",           # trah-KAH — trouble / fuss / worries (silent s)
+    "thraca":       "traca",
+    # ---- St. Landry / prairie-Cajun colloquial (deep-research 2026-06-16) ----
+    "asteur":       "asteur",          # ah-STUR — "now" (from à cette heure)
+    "astheure":     "asteur",
+    "à cette heure":"asteur",
+    "quoi faire":   "quoi faire",      # kwa-FAIR / ko-FAIR — "why"
+    "kofaire":      "quoi faire",
+    "quo'faire":    "quoi faire",
+    "mais là":      "mè là",           # may-LAH — "well now / well then"
+    "chaoui":       "chawi",           # sha-WEE — raccoon (Choctaw)
+    "chaouis":      "chawis",
+    "tayau":        "tayo",            # ta-YO — hound dog
+    "tayaus":       "tayos",
+    "gru":          "grou",            # groo — grits
+    "cabri":        "cabri",           # ka-BREE — goat
+    "chaudin":      "chaudin",         # sho-DAN — stuffed pig stomach
+    "quelque chose":"quéque chose",    # kek-SHOWZ — Cajun contraction of "something"
+    "quelque":      "quéque",
+    "quelqu'un":    "quéqu'un",
+    "déboires":     "débouare",        # day-BWAR — woes/setbacks; "tracas et déboires" = real trouble
+    "deboires":     "débouare",
+    "deba":         "déba",            # day-BAH — maw-maw's clipped "déboires"
+    "gremise":      "grémise",         # greh-MEEZ — grime / filth / "dirty dirt" (ear-tunable)
+    "grémise":      "grémise",
+    "gradou":       "gradou",          # grah-DOO — crud / grime / gunk (pairs w/ gremise)
+    "gradoux":      "gradou",
+    "gradu":        "gradou",
+    # ---- folklore, places & culture ----
+    "rougarou":     "rougarou",        # roo-gah-ROO — Cajun werewolf (loup-garou)
+    "rogaroux":     "rougarou",
+    "rougaroux":    "rougarou",
+    "loup-garou":   "loup-garou",
+    "bétaille":     "bataï",           # bah-TIE — critter / varmint / monster
+    "bétailles":    "bataïs",
+    "betaille":     "bataï",
+    "betailles":    "bataïs",
+    "batai":        "bataï",
+    "batais":       "bataïs",
+    "Grand Caillou":"Grand Caïou",     # grahn-KYE-oo — Terrebonne community
+    "Caillou":      "Caïou",
+    "Magnalite":    "Magnalite",       # cast-aluminum pots in every Cajun kitchen
+    "gardez-moi ça":"gadez don",       # fast Cajun: "look at that!" -> ga-DAY don
+    "garde-moi ça": "gadez don",
+    "garde moi ça": "gadez don",
+    "cher":         "sha",             # term of endearment — Cajun says "sha", not "shair"
+    "chère":        "sha",
+    "chere":        "sha",             # ascii-typed variant
+    "Cher":         "Sha",
     # ---- old Cajun given names (ear-tunable) ----
     "Aleda":        "Aléda",
     "Adalaya":      "Adalaïa",
@@ -109,9 +165,11 @@ LEXICON = {
     "Sophia":       "Sofia",
 }
 
+_lower_index = {k.lower(): v for k, v in LEXICON.items()}
+
 def _replace(m):
     word = m.group(0)
-    repl = LEXICON.get(word) or LEXICON.get(word.lower())
+    repl = LEXICON.get(word) or _lower_index.get(word.lower())
     if repl is None:
         return word
     if word[:1].isupper():
@@ -131,9 +189,10 @@ def to_js() -> str:
     entries = json.dumps(LEXICON, ensure_ascii=False)
     return (
         "var CAJUN_LEXICON=" + entries + ";\n"
+        "var CAJUN_LEX_LC={};Object.keys(CAJUN_LEXICON).forEach(function(k){CAJUN_LEX_LC[k.toLowerCase()]=CAJUN_LEXICON[k];});\n"
         "function cajunRespell(t){var ks=Object.keys(CAJUN_LEXICON).sort(function(a,b){return b.length-a.length;});"
         "var re=new RegExp('\\\\b('+ks.map(function(k){return k.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');}).join('|')+')\\\\b','gi');"
-        "return t.replace(re,function(w){var r=CAJUN_LEXICON[w]||CAJUN_LEXICON[w.toLowerCase()];if(!r)return w;"
+        "return t.replace(re,function(w){var r=CAJUN_LEXICON[w]||CAJUN_LEX_LC[w.toLowerCase()];if(!r)return w;"
         "return w[0]===w[0].toUpperCase()?r[0].toUpperCase()+r.slice(1):r;});}"
     )
 
