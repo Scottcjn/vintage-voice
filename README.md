@@ -151,6 +151,9 @@ python scripts/generate.py \
     --output     out.wav
 ```
 
+Running on PowerPC, IBM POWER, ARM Linux, or Apple Silicon? Use the portable
+CPU/MPS wrapper and benchmark in [`docs/PORTABLE_INFERENCE.md`](docs/PORTABLE_INFERENCE.md).
+
 Direct F5-TTS API call, for reference:
 
 ```python
