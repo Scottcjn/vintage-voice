@@ -59,7 +59,17 @@ invitation* — not as targets:
 - **Blackfoot / Niitsipowahsin** — Definitely Endangered (UNESCO); ~582 fluent
   speakers among the Siksika, with active immersion revitalization already led by
   fluent elders.
-- **Louisiana Indigenous languages** — including **Atakapa-Ishak**, **Chitimacha**
+- **Koasati (Coushatta)** — spoken by the **Coushatta Tribe of Louisiana** (Elton,
+  Allen Parish — near our maintainers in Lake Charles). ~370 speakers, Definitely
+  Endangered, and notably **the only tribe in Louisiana to retain its language as
+  a *first* language.** The Tribe already runs a strong, tribe-led documentation and
+  revitalization effort (with McNeese State University and William & Mary —
+  immersion preschool, "Language Nests," and the [Koasati Heritage](https://koasatiheritage.org)
+  project). Any VintageVoice involvement would only ever be **in support of that
+  existing tribal work, at the Tribe's direction** — never a parallel effort.
+- **Choctaw (Chahta)** — including the **Jena Band of Choctaw Indians** (LaSalle
+  Parish), who actively promote Choctaw language and culture education.
+- **Other Louisiana Indigenous languages** — **Atakapa-Ishak**, **Chitimacha**
   (active revitalization), **Tunica** (Tunica-Biloxi revitalization program), and
   the languages of the **Houma** and **Acolapissa** peoples.
 - Other endangered and heritage languages, where a community wants the tooling.
