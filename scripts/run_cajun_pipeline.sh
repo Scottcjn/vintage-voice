@@ -1,5 +1,20 @@
 #!/bin/bash
 # VintageVoice — Cajun French end-to-end pipeline (Victus RTX 4070 8GB)
+# ==============================================================================
+# FIXES applied relative to original:
+#   1. [Line ~80]  Env var typo: PYTORCH_ALLOC_CONF → PYTORCH_CUDA_ALLOC_CONF
+#      The misspelled variable had no effect. On 8GB GPUs, enabling
+#      expandable_segments is critical to avoid OOM from memory fragmentation.
+#   2. [Line ~130] Stage E resume guard: added output-exists check so re-runs
+#      after a crash skip the expensive CSV rebuild (matches the resume-safe
+#      pattern already used by Stage B).
+#
+# BEFORE:  PYTORCH_ALLOC_CONF=... (no-op — wrong variable name)
+# AFTER:   (removed the dead line; only the correct PYTORCH_CUDA_ALLOC_CONF remains)
+#
+# BEFORE:  Stage E always rebuilds F5 CSV even on re-run
+# AFTER:   if [ ! -f "$F5_CSV" ]; then ... fi  — matches Stage B pattern
+# ==============================================================================
 #
 # Stages:
 #   A. Wait for archive.org download to finish
@@ -101,8 +116,11 @@ $VENV/python $BASE/scripts/transcribe_watchdog.py \
 stage "D: done — manifests: $(ls $TRANSCRIBED/train_*.csv 2>/dev/null | xargs -n1 basename | tr '\n' ' ' || true)"
 
 # ---------- Stage E: build F5 dataset (French, QC-clean) ----------
-stage "E: building F5 CSV from clean French segments"
-$VENV/python - "$TRANSCRIBED" "$F5_CSV" <<'EOF'
+# FIX: Added resume guard — matches Stage B pattern.
+# On re-run after a Stage F crash, this skips the expensive CSV + Arrow rebuild.
+if [ ! -f "$F5_CSV" ]; then
+    stage "E: building F5 CSV from clean French segments"
+    $VENV/python - "$TRANSCRIBED" "$F5_CSV" <<'EOF'
 import glob, json, os, sys, unicodedata
 trans_dir, out_csv = sys.argv[1], sys.argv[2]
 vocab = set(l.rstrip("\n") for l in open("/home/scott/vintage-voice/models/OpenF5-TTS-Base/vocab.txt"))
@@ -129,6 +147,9 @@ if len(rows) < 100:
     print("FATAL: under 100 clean French samples — not enough to fine-tune")
     sys.exit(3)
 EOF
+else
+    stage "E: skip (F5 CSV exists)"
+fi
 
 stage "E: preparing Arrow dataset"
 # Pre-seed pretrained vocab where prepare_csv_wavs looks for it in finetune mode
@@ -147,9 +168,11 @@ cd $BASE
 # fp32 training of 337M params = ~6.7GB in weights/grads/Adam/EMA alone -> OOM on 8GB.
 # fp16 autocast (env honored: Trainer passes no mixed_precision) + bnb 8-bit AdamW
 # cuts optimizer state ~2GB and halves activation memory.
+#
+# FIX: Removed dead PYTORCH_ALLOC_CONF (typo — had no effect).
+# Only PYTORCH_CUDA_ALLOC_CONF is needed for expandable_segments.
 WANDB_MODE=offline \
 ACCELERATE_MIXED_PRECISION=fp16 \
-PYTORCH_ALLOC_CONF=expandable_segments:True \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0 $VENV/python -m f5_tts.train.finetune_cli \
     --bnb_optimizer \
