@@ -122,7 +122,21 @@ def extract_segment(input_path, output_path, start, end):
     subprocess.run(cmd, capture_output=True, timeout=60)
 
 
-def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
+def _parse_volume_db(stderr, field):
+    """Return a volumedetect dB field from ffmpeg stderr."""
+    marker = f"{field}:"
+    for line in stderr.splitlines():
+        if marker not in line:
+            continue
+        value_text = line.split(marker, 1)[1].strip().split()[0]
+        try:
+            return float(value_text)
+        except ValueError:
+            return None
+    return None
+
+
+def check_audio_quality(wav_path, min_rms=-50, max_rms=-5, max_peak=-0.1):
     """Filter out silence, noise-only, or clipped segments"""
     cmd = [
         "ffprobe", "-v", "quiet",
@@ -135,18 +149,29 @@ def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
         dur = float(json.loads(result.stdout)["format"]["duration"])
         if dur < 2.0 or dur > 20.0:
             return False
-    except Exception:
+    except (KeyError, ValueError, json.JSONDecodeError):
         return False
 
-    # Check RMS level
+    # Check RMS and peak level. The previous implementation accepted any file
+    # where ffmpeg completed, which let silent or clipped segments into training.
     cmd = [
         "ffmpeg", "-i", wav_path,
-        "-af", "astats=metadata=1:reset=1",
+        "-af", "volumedetect",
         "-f", "null", "-"
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-    # If ffmpeg ran ok, assume audio is valid (detailed RMS check is slow)
-    return result.returncode == 0
+    if result.returncode != 0:
+        return False
+
+    mean_volume = _parse_volume_db(result.stderr, "mean_volume")
+    max_volume = _parse_volume_db(result.stderr, "max_volume")
+    if mean_volume is None or max_volume is None:
+        return False
+    if mean_volume <= min_rms or mean_volume >= max_rms:
+        return False
+    if max_volume >= max_peak:
+        return False
+    return True
 
 
 def process_one_file(args_tuple):
