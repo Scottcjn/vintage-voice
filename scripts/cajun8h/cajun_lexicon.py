@@ -240,6 +240,39 @@ LEXICON = {
     "bête puante":  "bèt pwante",      # bet-PWANT — skunk ("stinking beast")
     "mulet":        "mulè",            # mu-LAY — mullet (silent t)
     "soulard":      "soula",           # soo-LAH — drunkard (silent r-d)
+    # ---- kinship & terms of address (Daigle, "A Dictionary of the Cajun
+    #      Language" 1984; Valdman et al., "Dictionary of Louisiana French" 2010
+    #      — ear-tunable) ----
+    "parrain":      "parran",      # pa-RAN — godfather (drop the textbook -ain glide)
+    "marraine":     "marenne",     # ma-REN — godmother
+    "nénaine":      "nénenne",     # nay-NEN — godmother (Cajun affectionate form)
+    "mononc":       "mononk",      # moh-NONK — uncle ("mon oncle" fused; cf. "nonc")
+    "matante":      "matante",     # ma-TANT — auntie ("ma tante" fused)
+    "popa":         "popa",        # poh-PAH — papa / dad
+    "moman":        "moman",       # moh-MAHN — mama / mom
+    "bougre":       "bougue",      # BOOG — fellow / guy (drop the -re)
+    "bougres":      "bougues",
+    "vaillant":     "vayan",       # vah-YAHN — brave, hardworking (a term of praise)
+    "vaillante":    "vayante",
+    # ---- prairie, marsh & bayou land (USGS GNIS feature terms; Valdman DLF 2010) ----
+    "coulée":       "coulé",       # koo-LAY — gully / seasonal stream (cf. étouffée->étouffé)
+    "coulées":      "coulés",
+    "platin":       "platin",      # plah-TANH — low wet spot that holds water in a field
+    "trainasse":    "trénasse",    # tray-NAHSS — trapper's narrow channel cut through marsh
+    "trénasse":     "trénasse",    # spelling variant
+    "batture":      "batture",     # bah-TUR — land between the levee and the river
+    "chénière":     "chénière",    # shay-NYAIR — live-oak ridge in the marsh (Chénière au Tigre)
+    "cheniere":     "chénière",    # ascii-typed variant
+    "marais":       "marè",        # mah-REH — marsh (silent -s)
+    "anse":         "anse",        # AHNSS — cove / inlet (Anse La Butte, Grand Anse)
+    # ---- fish & trapping animals (Daigle 1984; Valdman DLF 2010 — ear-tunable) ----
+    "sac-à-lait":   "sac-à-lè",    # sak-ah-LEH — white crappie ("milk sack")
+    "sac à lait":   "sac-à-lè",    # spacing variant
+    "patassa":      "patassa",     # pah-tah-SAH — sunfish / perch
+    "rat de bois":  "rat d'bois",  # rah-d-BWAH — opossum ("woods rat")
+    "rat musqué":   "rat musqué",  # rah moos-KAY — muskrat (the prized trapping animal)
+    "tortue":       "tortu",       # tor-TU — turtle (silent -e)
+    "tortues":      "tortus",
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
