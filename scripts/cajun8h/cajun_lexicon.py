@@ -75,13 +75,17 @@ LEXICON = {
     "couillon":     "couyon",
     "couillons":    "couyons",
     "lagniappe":    "lagnappe",
-    "fais-do-do":   "fé dodo",          # fay-DOH-doh — the dance (+ "go to sleep" to the kids)
-    "fais do-do":   "fé dodo",
-    "fais do do":   "fé dodo",
-    "fais dodo":    "fé dodo",
-    "fait do do":   "fé dodo",
-    "fait do-do":   "fé dodo",
-    "faisdodo":     "fé dodo",
+    "fais-do-do":   "fé dô-dô",          # fay-DOH-doh — the dance (+ "go to sleep" to the kids)
+    "fais do-do":   "fé dô-dô",
+    "fais do do":   "fé dô-dô",
+    "fais dodo":    "fé dô-dô",
+    "fait do do":   "fé dô-dô",
+    "fait do-do":   "fé dô-dô",
+    "faisdodo":     "fé dô-dô",
+    "à soir":       "à soi",            # ah-SWAH — "tonight" (Cajun softens/drops the R)
+    "a soir":       "à soi",
+    "asoir":        "à soi",
+    "à soir,":      "à soi,",
     "ti bébé":      "ti bébé",          # tee-bay-BAY — little baby (Cajun 'ti' = petit)
     "ti bebe":      "ti bébé",
     "t'bébé":       "ti bébé",
