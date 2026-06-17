@@ -40,7 +40,7 @@ def main():
         # loudness boost — CosyVoice output is mastered quiet (~-26 LUFS); bring it up
         tmp = path + ".loud.wav"
         if subprocess.run(["ffmpeg","-y","-loglevel","error","-i",path,
-                           "-af","loudnorm=I=-12:LRA=7:TP=-1.0",tmp]).returncode == 0:
+                           "-af","loudnorm=I=-12:LRA=7:TP=-1.0","-ar","24000","-ac","1",tmp]).returncode == 0:
             os.replace(tmp, path)
         print("WROTE", path, flush=True)
 
