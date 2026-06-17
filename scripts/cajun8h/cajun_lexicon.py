@@ -147,6 +147,27 @@ LEXICON = {
     "gru":          "grou",            # groo — grits
     "cabri":        "cabri",           # ka-BREE — goat
     "chaudin":      "chaudin",         # sho-DAN — stuffed pig stomach
+    # ---- Louisiana/Cajun culinary pronunciations (public glossary attested) ----
+    "boudin":       "bou-dan",         # Source: Visit Baton Rouge, Boudin (boo-dan)
+    "boudins":      "bou-dans",        # plural; same attestation as boudin
+    "beignet":      "bèn-yé",          # Source: Visit Baton Rouge, Beignet (bin-yay)
+    "beignets":     "bèn-yés",
+    "courtbouillon":"cou-bouyon",      # Source: Explore Louisiana, Courtbouillon [coo-boo-yon]
+    "court bouillon":"cou-bouyon",
+    "bouillie":     "bou-yee",         # Source: Acadiana Table, Bouillie (BOO yee)
+    "tarte à la bouillie": "tarte à la bou-yee",
+    "tarte a la bouillie": "tarte à la bou-yee",
+    "boulette":     "boulet",          # Source: Acadiana Table, Boulette (BOO let)
+    "boulettes":    "boulets",
+    "roux":         "rou",             # Source: Big Easy Foods, Roux (roo)
+    "grillades":    "gri-yades",       # Source: Big Easy Foods, Grillades (GREE yads)
+    "amandine":     "arman-dine",      # Source: Big Easy Foods, Amandine (ar-man-deen)
+    "au gratin":    "ô gratin",        # Source: Acadiana Table, Au gratin (oh GRAH tan)
+    "cochon de lait":"cou-shon de lait", # Source: Big Easy Foods, Cochon de Lait (coo-shon duh lay)
+    "café au lait": "café ô lait",     # Source: Acadiana Table, Café au Lait (caf AY oh LAY)
+    "cafe au lait": "café ô lait",
+    "rémoulade":    "rémoularde",      # Source: Big Easy Foods, Remoulade (rem-oo-lard)
+    "remoulade":    "rémoularde",
     "quelque chose":"quéque chose",    # kek-SHOWZ — Cajun contraction of "something"
     "quelque":      "quéque",
     "quelqu'un":    "quéqu'un",
