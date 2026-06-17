@@ -239,10 +239,13 @@ reference clips steer the output toward different period styles.
 | `wartime` | 1939–1945 | Churchill, Murrow | Planned — needs curated ref clip |
 | `announcer` | 1930s–1960s | Radio commercials, station IDs | Planned — needs curated ref clip |
 | `cajun_french` | 1880s–present | Family + field recordings | **Collecting** — see [Cajun French Preservation](#cajun-french-preservation-unesco-endangered) |
+| `irish_english` | 2009 public-domain accent sample | LibriVox Dialect and Accent Collection | **Seed profile** — ref clip + config + [docs](docs/profiles/IRISH_ENGLISH_LIBRIVOX.md) |
 
-Only `transatlantic` ships in this v0.1.0 release. The other six are
-scaffolded in the scripts but will go live as their reference clips and
-transcripts are curated and validated.
+Only `transatlantic` ships in this v0.1.0 release. The other historical
+presets are scaffolded in the scripts but will go live as their reference clips
+and transcripts are curated and validated. `irish_english` is a small
+public-domain seed profile; it provides a usable reference clip and finetune
+plan, not a full trained accent checkpoint yet.
 
 ---
 
