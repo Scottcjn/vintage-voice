@@ -16,6 +16,11 @@ import argparse
 import os
 import sys
 
+try:
+    from scripts.portable_inference import choose_inference_plan
+except ModuleNotFoundError:
+    from portable_inference import choose_inference_plan
+
 
 # Reference audio clips for each preset (included in the model release).
 # Each is a clean 5-15 sec WAV (24 kHz mono) that captures the target
@@ -38,13 +43,14 @@ def resolve_ref(preset, override, model_dir):
     rel = PRESET_REFS.get(preset)
     if not rel:
         return None
-    if os.path.exists(rel):
-        return rel
+    rel_path = os.path.normpath(rel)
+    if os.path.exists(rel_path):
+        return rel_path
     if model_dir:
-        candidate = os.path.join(model_dir, rel)
+        candidate = os.path.join(model_dir, rel_path)
         if os.path.exists(candidate):
             return candidate
-    return rel  # let caller surface a clear error if missing
+    return rel_path  # let caller surface a clear error if missing
 
 
 def generate_speech(
@@ -55,7 +61,7 @@ def generate_speech(
     ref_audio=None,
     ref_text="",
     output_path="output.wav",
-    device="cuda:0",
+    device="auto",
     speed=0.9,
     remove_silence=True,
 ):
@@ -88,18 +94,20 @@ def generate_speech(
         print("   exact transcript of your reference clip.", file=sys.stderr)
         print("", file=sys.stderr)
 
+    plan = choose_inference_plan(device)
+
     print("VintageVoice Generation")
     print(f"  Preset:    {preset}")
     print(f"  Text:      {text[:80]}{'...' if len(text) > 80 else ''}")
     print(f"  Reference: {ref_audio}")
     print(f"  Output:    {output_path}")
-    print(f"  Device:    {device}")
+    print(f"  Device:    {plan.device} ({plan.reason})")
 
     tts = F5TTS(
         model="F5TTS_v1_Base",
         ckpt_file=model_path or "",
         vocab_file=vocab_path or "",
-        device=device,
+        device=plan.device,
         use_ema=True,
     )
     if model_path:
@@ -132,7 +140,11 @@ def main():
                         help="Transcript of the reference audio (recommended; "
                              "skips Whisper auto-transcribe and reduces bleed)")
     parser.add_argument("--output", default="output.wav", help="Output WAV path")
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument(
+        "--device",
+        default="auto",
+        help="F5-TTS device string or 'auto' for portable CPU/MPS/CUDA selection",
+    )
     parser.add_argument("--speed", type=float, default=0.9,
                         help="Playback speed; 0.9 suits measured vintage cadence")
     parser.add_argument("--keep-silence", action="store_true",

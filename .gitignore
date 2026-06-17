@@ -6,6 +6,8 @@ models/*.safetensors
 models/*.bin
 *.pyc
 __pycache__/
+.pytest-tmp/
+.pytest_cache/
 .env
 *.wav
 *.mp3
