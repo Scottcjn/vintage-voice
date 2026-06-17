@@ -163,6 +163,31 @@ LEXICON = {
     "Sophia Elya":  "Sofia Élia",
     "Elya":         "Élia",
     "Sophia":       "Sofia",
+    # ---- Cajun music, dance & Mardi Gras (attest.: Valdman et al.,
+    #      "Dictionary of Louisiana French as Spoken in Cajun, Creole and
+    #      American Indian Communities", 2010; Ancelet, "Cajun & Creole Music
+    #      Makers") — respell so CosyVoice drops the textbook tails ----
+    "frottoir":     "frotwar",         # fro-TWAR — zydeco rubboard (oi -> wa, silent r)
+    "frottoirs":    "frotwars",
+    "'tit fer":     "tit fèr",         # tee-FAIR — the triangle, the "little iron"
+    "tit fer":      "tit fèr",
+    "Courir de Mardi Gras": "Couri d'Mardi Gras",  # koo-REE — the rural Mardi Gras run
+    "courir":       "couri",           # koo-REE — to run (Cajun drops the final r)
+    "capuchon":     "capichon",        # ka-pee-SHAWN — conical Mardi Gras hat
+    "capuchons":    "capichons",
+    "la-la":        "la-la",           # lah-lah — old Creole house dance (zydeco's root)
+    "valse":        "vals",            # vahls — waltz (silent final e)
+    "valses":       "vals",
+    # ---- swamp critters & nature (attest.: Dictionary of Louisiana French, 2010) ----
+    "chevreuil":    "chevreuye",       # shev-RUH-y — deer
+    "chevreuils":   "chevreuyes",
+    "écureuil":     "écureuye",        # ay-ku-RUH-y — squirrel
+    "écureuils":    "écureuyes",
+    "bec-croche":   "bèk-croche",      # bek-KROSH — ibis ("crooked beak")
+    "bec-croches":  "bèk-croches",
+    "bête puante":  "bèt pwante",      # bet-PWANT — skunk ("stinking beast")
+    "mulet":        "mulè",            # mu-LAY — mullet (silent t)
+    "soulard":      "soula",           # soo-LAH — drunkard (silent r-d)
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
