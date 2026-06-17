@@ -196,6 +196,23 @@ LEXICON = {
     "Sophia Elya":  "Sofia Élia",
     "Elya":         "Élia",
     "Sophia":       "Sofia",
+    # ---- Cajun / Acadian surnames (Louisiana surname rankings + Acadian family lists) ----
+    "Comeaux":      "Como",            # -eaux family-name ending: enforce the Cajun "o" sound
+    "Arceneaux":    "Arsenô",          # common Acadian/Cajun surname; same -eaux -> o pattern
+    "Robichaux":    "Robicho",
+    "Broussard":    "Broussar",        # final consonant softened/silent in French-friendly TTS
+    "Fontenot":     "Fontenô",         # Louisiana surname; final -ot rendered as open "o"
+    "Landry":       "Landri",
+    "LeBlanc":      "Le Blan",         # final c silent in French-style surname pronunciation
+    "Dugas":        "Duga",            # final s silent
+    "Doucet":       "Doucé",           # -cet family-name ending, closer to "doo-say"
+    "Bourgeois":    "Bourjwa",         # French oi -> wa
+    "Richard":      "Richar",          # final d silent
+    "Thériot":      "Tério",
+    "Theriot":      "Tério",
+    "Sonnier":      "Sonyé",
+    "Melançon":     "Mélançon",
+    "Melancon":     "Mélançon",
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
