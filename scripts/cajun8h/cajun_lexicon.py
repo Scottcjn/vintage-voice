@@ -69,6 +69,21 @@ LEXICON = {
     "Thibodeaux":   "Tibodo",
     "Hebert":       "Ébère",
     "Guidry":       "Guidri",
+    # ---- Acadiana town-name respellings (municipal/place names; ear-tunable) ----
+    "Ville Platte": "Ville Plat",      # Evangeline Parish city; final -e is not voiced
+    "Gueydan":      "Guédan",          # Vermilion Parish town; helps avoid hard English "guy-dan"
+    "Iota":         "Aïota",           # Acadia Parish town; keep the opening eye sound
+    "Duson":        "Duzon",           # Lafayette/Acadia Parish town
+    "Erath":        "Érat",            # Vermilion Parish town
+    "Delcambre":    "Delcambe",        # Iberia/Vermilion Parish town
+    "Mermentau":    "Mermento",        # Acadia Parish village / river name
+    "Meraux":       "Méro",            # St. Bernard Parish community; French -aux ending
+    "Pierre Part":  "Pierre Par",      # Assumption Parish community; final -t is silent
+    "Basile":       "Bazile",          # Evangeline/Acadia Parish town
+    "Rayne":        "Rain",            # Acadia Parish city
+    "Kaplan":       "Caplan",          # Vermilion Parish city
+    "Abbeville":    "Abb-ville",       # Vermilion Parish city; cue the local clipped middle
+    "Church Point": "Church Pointe",   # Acadia Parish town; keep the place-name cadence
     # ---- Cajun / Louisiana French lexicon ----
     "maringouin":   "marin-gouin",
     "maringouins":  "marin-gouins",
