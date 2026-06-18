@@ -69,7 +69,14 @@ LEXICON = {
     "Thibodeaux":   "Tibodo",
     "Hebert":       "Ébère",
     "Guidry":       "Guidri",
-    # ---- Cajun / Louisiana French lexicon ----
+    # ---- new place-names (regional & cultural) ----
+    "Lafayette":    "Lafayet",          # Laf-ee-yet (local pronunciation)
+    "Toulouse":     "Toulouse",         # too-looz (French quarter street)
+    "Bourbon":      "Bourbon",          # bur-bun (but often said "bur-bon" locally)
+    "Rampart":      "Rampart",          # ram-part (street in NOLA)
+    "Bayou St. John": "Bayou Saint John", # bye-you saynt jon
+    "Tchoupitoulas": "Tchopitoulas",    # already above, but reinforce
+    # ---- Cajun / Louisiana French lexicon (expanded) ----
     "maringouin":   "marin-gouin",
     "maringouins":  "marin-gouins",
     "couillon":     "couyon",
@@ -196,6 +203,36 @@ LEXICON = {
     "Sophia Elya":  "Sofia Élia",
     "Elya":         "Élia",
     "Sophia":       "Sofia",
+    # ===== NEW REGIONAL ENTRIES (bounty #178) =====
+    # ---- Food & drink ----
+    "boudin":       "boo-dan",         # boo-DAN — classic Cajun sausage
+    "andouille":    "an-doo-ee",       # an-DOO-ee — smoked sausage
+    "tasso":        "tah-so",          # TAH-so — cured pork
+    "gumbo":        "gum-boh",         # GUM-boh — iconic stew
+    "jambalaya":    "jum-buh-lie-uh",  # jum-buh-LIE-uh — rice dish
+    "po'boy":       "poh-boy",         # POH-boy — sandwich
+    "po boy":       "poh-boy",
+    "crawfish":     "craw-fish",       # CRAW-fish — Louisiana crustacean
+    "étouffée":     "étouffé",         # ay-too-FAY (already exists, but reinforce)
+    "etouffee":     "étouffé",
+    "beignet":      "ben-yay",         # ben-YAY — fried pastry (also in NOLA)
+    # ---- Festivals & culture ----
+    "Mardi Gras":   "Mar-dee Grah",    # MAR-dee GRAH — Fat Tuesday
+    "Mardi Gras,":  "Mar-dee Grah,",
+    "zydeco":       "zye-dee-co",      # ZYE-dee-co — music genre
+    "Creole":       "Cree-ole",        # CREE-ole — cultural group
+    "Creole,":      "Cree-ole,",
+    "Cajun":        "Kay-jun",         # KAY-jun — the people (but often said "kay-jun")
+    "cajun":        "kay-jun",
+    # ---- Nature & geography ----
+    "bayou":        "bye-you",         # BYE-you — slow-moving creek
+    "bayous":       "bye-yous",
+    "parish":       "pear-ish",        # PEAR-ish — Louisiana county equivalent
+    "parishes":     "pear-ish-es",
+    # ---- New Orleans streets & landmarks ----
+    "Rampart":      "Ram-part",        # RAM-part — street
+    "Bourbon":      "Bur-bun",         # BUR-bun — street (locals often say "bur-bun")
+    "Bourbon,":     "Bur-bun,",
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
