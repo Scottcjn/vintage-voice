@@ -15,31 +15,97 @@ import argparse
 import os
 import subprocess
 import json
+import csv
+import re
+import tempfile
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
+# --- Security hardening ------------------------------------------------------
+# Restrict FFmpeg/ffprobe to local file access only. Without this, a file whose
+# *content* is an HLS/concat playlist (regardless of its extension) can make
+# FFmpeg follow http/file URLs embedded in it, enabling SSRF and arbitrary file
+# reads (CWE-918).
+FFMPEG_PROTOCOLS = "file,pipe"
+
+# Headers of playlist / markup payloads that must never be fed to FFmpeg even if
+# they carry an audio extension. Real audio containers start with ID3/RIFF/OggS/
+# fLaC/ftyp — never with these signatures.
+_DANGEROUS_HEADERS = (b"#EXTM3U", b"#EXT-X", b"ffconcat", b"<?xml", b"<")
+
+# Characters allowed in derived output filenames; everything else collapses to
+# "_" so a crafted source name cannot inject CSV rows or path separators
+# (CWE-1236 / CWE-507).
+_SAFE_STEM_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _safe_stem(name):
+    """Sanitize a filename stem for safe use in output paths and the manifest."""
+    stem = _SAFE_STEM_RE.sub("_", name).strip("._")
+    return stem or "segment"
+
+
+def assert_safe_audio_input(path):
+    """Reject inputs whose content is a playlist/markup disguised as audio."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(64).lstrip()
+    except OSError:
+        raise ValueError(f"cannot read input: {path}")
+    for sig in _DANGEROUS_HEADERS:
+        if head.startswith(sig):
+            raise ValueError(f"refusing non-audio/playlist payload: {path}")
+
+
+def _ffmpeg_to_temp(output_path, cmd, timeout):
+    """Run an ffmpeg command, writing the result atomically to output_path.
+
+    FFmpeg writes to a freshly created temp file in the destination directory;
+    on success it is os.replace()'d onto output_path. This defeats the symlink /
+    TOCTOU arbitrary-write attack (CWE-367, CWE-59): even if output_path is a
+    planted symlink, os.replace overwrites the link itself, never its target.
+    The temp name carries no controlled extension, so callers must force the
+    output format explicitly (e.g. "-f", "wav").
+    """
+    out_dir = os.path.dirname(output_path) or "."
+    fd, tmp_path = tempfile.mkstemp(suffix=".tmp", dir=out_dir)
+    os.close(fd)
+    try:
+        result = subprocess.run(cmd + [tmp_path], capture_output=True, timeout=timeout)
+        if result.returncode != 0 or not os.path.getsize(tmp_path):
+            os.unlink(tmp_path)
+            return False
+        os.replace(tmp_path, output_path)
+        return True
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        return False
+
+
 def convert_to_wav(input_path, output_path, sample_rate=24000):
     """Convert any audio to 24kHz mono WAV"""
+    assert_safe_audio_input(input_path)
     cmd = [
-        "ffmpeg", "-y", "-i", input_path,
+        "ffmpeg", "-y", "-protocol_whitelist", FFMPEG_PROTOCOLS,
+        "-i", input_path,
         "-ar", str(sample_rate), "-ac", "1",
         "-c:a", "pcm_s16le",
         "-af", "loudnorm=I=-23:TP=-1.5:LRA=11",
-        output_path
+        "-f", "wav",
     ]
-    result = subprocess.run(cmd, capture_output=True, timeout=300)
-    return result.returncode == 0
+    return _ffmpeg_to_temp(output_path, cmd, timeout=300)
 
 
 def split_on_silence(wav_path, output_dir, min_dur=3.0, max_dur=15.0, silence_thresh=-40):
     """Split audio on silence boundaries into segments"""
     os.makedirs(output_dir, exist_ok=True)
-    stem = Path(wav_path).stem
+    stem = _safe_stem(Path(wav_path).stem)
 
     # Use ffmpeg silencedetect to find split points
     cmd = [
-        "ffmpeg", "-i", wav_path,
+        "ffmpeg", "-protocol_whitelist", FFMPEG_PROTOCOLS, "-i", wav_path,
         "-af", f"silencedetect=noise={silence_thresh}dB:d=0.5",
         "-f", "null", "-"
     ]
@@ -65,8 +131,8 @@ def split_on_silence(wav_path, output_dir, min_dur=3.0, max_dur=15.0, silence_th
 
     # Get total duration
     probe_cmd = [
-        "ffprobe", "-v", "quiet", "-show_entries",
-        "format=duration", "-of", "json", wav_path
+        "ffprobe", "-v", "quiet", "-protocol_whitelist", FFMPEG_PROTOCOLS,
+        "-show_entries", "format=duration", "-of", "json", wav_path
     ]
     probe = subprocess.run(probe_cmd, capture_output=True, text=True)
     try:
@@ -114,18 +180,19 @@ def split_on_silence(wav_path, output_dir, min_dur=3.0, max_dur=15.0, silence_th
 def extract_segment(input_path, output_path, start, end):
     """Extract a time segment from audio"""
     cmd = [
-        "ffmpeg", "-y", "-i", input_path,
+        "ffmpeg", "-y", "-protocol_whitelist", FFMPEG_PROTOCOLS,
+        "-i", input_path,
         "-ss", str(start), "-to", str(end),
         "-c:a", "pcm_s16le",
-        output_path
+        "-f", "wav",
     ]
-    subprocess.run(cmd, capture_output=True, timeout=60)
+    _ffmpeg_to_temp(output_path, cmd, timeout=60)
 
 
 def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
     """Filter out silence, noise-only, or clipped segments"""
     cmd = [
-        "ffprobe", "-v", "quiet",
+        "ffprobe", "-v", "quiet", "-protocol_whitelist", FFMPEG_PROTOCOLS,
         "-show_entries", "stream=codec_type",
         "-show_entries", "format=duration",
         "-of", "json", wav_path
@@ -140,7 +207,7 @@ def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
 
     # Check RMS level
     cmd = [
-        "ffmpeg", "-i", wav_path,
+        "ffmpeg", "-protocol_whitelist", FFMPEG_PROTOCOLS, "-i", wav_path,
         "-af", "astats=metadata=1:reset=1",
         "-f", "null", "-"
     ]
@@ -152,12 +219,20 @@ def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
 def process_one_file(args_tuple):
     """Process a single audio file — convert, split, filter"""
     input_path, wav_dir, seg_dir = args_tuple
-    stem = Path(input_path).stem
+    stem = _safe_stem(Path(input_path).stem)
 
     # Convert to WAV
     wav_path = os.path.join(wav_dir, f"{stem}.wav")
+    # Refuse to read or overwrite through a symlink planted at the output path
+    # (CWE-59): otherwise ffmpeg would follow it to an arbitrary target.
+    if os.path.islink(wav_path):
+        return []
     if not os.path.exists(wav_path):
-        ok = convert_to_wav(input_path, wav_path)
+        try:
+            ok = convert_to_wav(input_path, wav_path)
+        except ValueError:
+            # Rejected non-audio / playlist payload — skip silently.
+            return []
         if not ok:
             return []
 
@@ -213,12 +288,16 @@ def main():
             except Exception as e:
                 print(f"  [{i+1}/{len(files)}] ERROR {src}: {e}")
 
-    # Write manifest
+    # Write manifest. Use csv.writer (not raw string formatting) so any field
+    # containing a pipe, quote or newline is properly quoted — this prevents
+    # manifest row injection / ML data poisoning (CWE-1236) while staying
+    # compatible with the downstream csv.DictReader(delimiter="|") consumers.
     manifest_path = os.path.join(args.output, "manifest.csv")
-    with open(manifest_path, "w") as f:
-        f.write("path|duration|source\n")
+    with open(manifest_path, "w", newline="") as f:
+        writer = csv.writer(f, delimiter="|", quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["path", "duration", "source"])
         for seg in all_segments:
-            f.write(f"{seg['path']}|{seg['duration']:.2f}|{Path(seg['path']).stem}\n")
+            writer.writerow([seg["path"], f"{seg['duration']:.2f}", Path(seg["path"]).stem])
 
     print(f"\nDone! {len(all_segments)} segments from {len(files)} files")
     print(f"Manifest: {manifest_path}")
