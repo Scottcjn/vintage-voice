@@ -167,6 +167,24 @@ python scripts/generate.py \
     --output     out.wav
 ```
 
+`--device auto` is the default for portable inference. It keeps PPC/POWER and
+non-mac ARM hosts on CPU, uses Apple Silicon MPS when available, and otherwise
+uses CUDA when PyTorch reports CUDA support. To inspect a target before running
+F5-TTS, use the benchmark dry-run:
+
+```bash
+python scripts/benchmark_inference.py \
+    --device auto \
+    --dry-run \
+    --json benchmark-plan.json
+```
+
+On target hardware, remove `--dry-run` and pass the same model, vocab,
+reference audio, and reference transcript used with `scripts/generate.py` to
+write runnable timing evidence. See
+[`docs/PORTABLE_INFERENCE.md`](docs/PORTABLE_INFERENCE.md) for target-hardware
+notes and the benchmark JSON shape.
+
 Direct F5-TTS API call, for reference:
 
 ```python
