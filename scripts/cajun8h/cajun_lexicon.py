@@ -132,6 +132,25 @@ LEXICON = {
     "cooshcoosh":   "couche-couche",
     "tracas":       "traca",           # trah-KAH — trouble / fuss / worries (silent s)
     "thraca":       "traca",
+    # ---- bayou boats, water & fishing-work terms (LSU glossary + public LA travel glossaries) ----
+    "bayou":        "baïou",           # Visit Baton Rouge: bayou = slow-moving stream, "bye-you"
+    "bayous":       "baïous",
+    "pirogue":      "pi-ro",           # Explore Louisiana/Acadiana Table: Cajun canoe, PEE-row
+    "pirogues":     "pi-ros",
+    "à la pêche":   "à la pèch",       # LSU Cajun glossary: pêche = fishing; final e softened
+    "a la peche":   "à la pèch",
+    "pêche":        "pèch",
+    "peche":        "pèch",
+    "eau douce":    "eau dous",        # LSU glossary: eau douce = fresh water, douce [DOOS]
+    "eaux douces":  "eaux dous",
+    "eau salée":    "eau salé",        # LSU glossary: eau salée = salt water; final e not over-read
+    "eau salee":    "eau salé",
+    "eaux salées":  "eaux salés",
+    "eaux salees":  "eaux salés",
+    "ecrevisse":    "écrevisse",       # LSU glossary: écrevisse = crawfish; keep accent in generated text
+    "ecrevisses":   "écrevisses",
+    "crevette":     "chevrette",       # LSU glossary notes Louisiana French chevrette for shrimp
+    "crevettes":    "chevrettes",
     # ---- St. Landry / prairie-Cajun colloquial (deep-research 2026-06-16) ----
     "asteur":       "asteur",          # ah-STUR — "now" (from à cette heure)
     "astheure":     "asteur",
