@@ -83,3 +83,19 @@ announcer:
     - Station identification cadence
     - Sponsor read formality
     - Sign-off flourishes
+
+irish_english:
+  description: "Irish English accent seed from a public-domain LibriVox dialect sample"
+  training_data:
+    - librivox_dialect_accent_collection
+  characteristics:
+    - English-language profile; not an Irish/Gaeilge language model
+    - Clean read-speech reference from one public-domain volunteer recording
+    - Suited for Hiberno-English cadence experiments before a larger consented corpus
+    - Requires additional public-domain or consented audio before full fine-tuning
+  source:
+    item: "LibriVox Dialect and Accent Collection Vol. 1"
+    file: "dialectaccent_vol_01_02poh.mp3"
+    reader: "Padraig"
+    license: "Public Domain"
+    url: "https://archive.org/details/dialect_accent_0909_librivox"

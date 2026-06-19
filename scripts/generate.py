@@ -28,6 +28,7 @@ PRESET_REFS = {
     "edison":        "refs/edison_cylinder_ref.wav",
     "wartime":       "refs/wartime_broadcast_ref.wav",
     "announcer":     "refs/radio_announcer_ref.wav",
+    "irish_english": "refs/irish_english_librivox_ref.wav",
 }
 
 

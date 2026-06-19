@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: MIT
+profile:
+  id: irish_english
+  display_name: "Irish English (LibriVox public-domain seed)"
+  type: accent
+  language: English
+  region: Ireland
+  status: seed_profile
+  base_training_config: ../cosyvoice2_8gb.yaml
+
+source_audio:
+  collection: "LibriVox Dialect and Accent Collection Vol. 1"
+  archive_identifier: dialect_accent_0909_librivox
+  item_url: "https://archive.org/details/dialect_accent_0909_librivox"
+  download_url: "https://archive.org/download/dialect_accent_0909_librivox/dialectaccent_vol_01_02poh.mp3"
+  source_file: dialectaccent_vol_01_02poh.mp3
+  source_title: "Irish accent"
+  reader: "Padraig"
+  source_comment: "Recorded by Padraig in an Irish accent"
+  license: Public Domain
+  license_url: "http://creativecommons.org/licenses/publicdomain/"
+  original_duration_seconds: 74.63
+
+reference_clip:
+  path: refs/irish_english_librivox_ref.wav
+  source_start_seconds: 0.0
+  duration_seconds: 12.0
+  sample_rate_hz: 24000
+  channels: 1
+  sample_format: pcm_s16le
+  generated_with: "ffmpeg -ss 0 -t 12 -ac 1 -ar 24000 -sample_fmt s16"
+
+rights_gate:
+  allow:
+    - public_domain_audio
+    - explicit_speaker_consent
+  reject:
+    - scraped_or_rights_encumbered_audio
+    - endangered_or_indigenous_language_data_without_community_governance
+    - living_speaker_voice_clone_without_consent
+
+finetune_plan:
+  target_clean_hours: 8
+  segment_duration_seconds: [5, 15]
+  sample_rate_hz: 24000
+  train_models:
+    - llm
+    - flow
+  starting_config: configs/cosyvoice2_8gb.yaml
+  manifest_schema:
+    - audio_path
+    - transcript
+    - source_url
+    - license
+    - speaker_or_reader
+    - consent_or_public_domain_evidence

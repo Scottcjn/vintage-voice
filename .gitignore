@@ -8,6 +8,7 @@ models/*.bin
 __pycache__/
 .env
 *.wav
+!refs/irish_english_librivox_ref.wav
 *.mp3
 *.ogg
 venv/
