@@ -138,15 +138,41 @@ def check_audio_quality(wav_path, min_rms=-50, max_rms=-5):
     except Exception:
         return False
 
-    # Check RMS level
+    # Check RMS level using volumedetect
     cmd = [
         "ffmpeg", "-i", wav_path,
-        "-af", "astats=metadata=1:reset=1",
+        "-af", "volumedetect",
         "-f", "null", "-"
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-    # If ffmpeg ran ok, assume audio is valid (detailed RMS check is slow)
-    return result.returncode == 0
+    if result.returncode != 0:
+        return False
+
+    mean_volume = None
+    max_volume = None
+    for line in result.stderr.split('\n'):
+        if 'mean_volume:' in line:
+            try:
+                mean_volume = float(line.split('mean_volume:')[1].strip().split()[0])
+            except (IndexError, ValueError):
+                pass
+        elif 'max_volume:' in line:
+            try:
+                max_volume = float(line.split('max_volume:')[1].strip().split()[0])
+            except (IndexError, ValueError):
+                pass
+
+    if mean_volume is None or max_volume is None:
+        return False
+
+    if mean_volume < min_rms or mean_volume > max_rms:
+        return False
+
+    # Check for clipping (0 dB or above)
+    if max_volume >= 0.0:
+        return False
+
+    return True
 
 
 def process_one_file(args_tuple):
