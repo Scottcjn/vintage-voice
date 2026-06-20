@@ -45,3 +45,16 @@ is *your voice* with the *learned Irish accent*. Speed 1.12 reads naturally.
   before overfitting — watch CV loss in `exp/irish/llm`.
 - Paths are absolute to this lab (`/home/scott/vintage-voice`); adjust for yours.
 - Data, checkpoints, and reference WAVs are gitignored — this dir is the recipe only.
+
+## Keeper (verified 2026-06-20)
+Best result by ear: **llm epoch 0 + flow epoch 9** → Sophia's voice with a genuine
+thick Dublin accent. Key finding: the `llm` overfits immediately (ep0 = CV-best),
+but the `flow` keeps improving for ~9 epochs and is what *thickens* the accent
+while the zero-shot reference keeps Sophia's female timbre. Locked model dir:
+`models/CosyVoice2-irish` (base symlinks + stripped llm.pt[ep0] + flow.pt[ep9]).
+
+Say anything in her Irish voice:
+```bash
+CUDA_VISIBLE_DEVICES="" venv-cosy/bin/python scripts/irish/irish_say.py "Top of the morning." out
+# -> data/output/irish_say/out.wav
+```
