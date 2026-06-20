@@ -101,9 +101,46 @@ $VENV/python $BASE/scripts/transcribe_watchdog.py \
 stage "D: done — manifests: $(ls $TRANSCRIBED/train_*.csv 2>/dev/null | xargs -n1 basename | tr '\n' ' ' || true)"
 
 # ---------- Stage E: build F5 dataset (French, QC-clean) ----------
-stage "E: building F5 CSV from clean French segments"
-$VENV/python - "$TRANSCRIBED" "$F5_CSV" <<'EOF'
-import glob, json, os, sys, unicodedata
+# Resume guard (matches Stage B pattern): on a re-run after a later-stage crash,
+# skip the expensive CSV + Arrow rebuild — BUT only if the existing CSV is
+# actually complete AND up-to-date. A crashed Stage E could leave a
+# truncated/partial CSV on disk; skipping on mere existence would feed garbage
+# into training. We therefore (a) write the CSV atomically (temp file +
+# os.replace, so it only appears once fully written), (b) verify completeness
+# (header present + >= the required 100 sample rows), and (c) require the CSV to
+# be NEWER than every transcribed input it derives from — otherwise a re-run
+# after Stage D produced fresh/changed transcriptions would silently train on a
+# stale CSV.
+stage_e_csv_complete() {
+    [ -s "$F5_CSV" ] || return 1
+    # Staleness check: if any transcribed *.json is newer than the CSV, the
+    # transcriptions changed since the CSV was built — force a rebuild. `find
+    # -newer` prints the offending file(s); a non-empty result means stale.
+    if [ -d "$TRANSCRIBED" ] && \
+       [ -n "$(find "$TRANSCRIBED" -maxdepth 1 -name '*.json' -newer "$F5_CSV" -print -quit 2>/dev/null)" ]; then
+        return 1
+    fi
+    $VENV/python - "$F5_CSV" <<'PYEOF'
+import sys
+path = sys.argv[1]
+try:
+    with open(path, encoding="utf-8") as fh:
+        lines = [ln for ln in (l.rstrip("\n") for l in fh) if ln]
+except OSError:
+    sys.exit(1)
+# Must have the header plus at least the 100 sample rows Stage E enforces.
+if not lines or lines[0] != "audio_file|text":
+    sys.exit(1)
+sys.exit(0 if (len(lines) - 1) >= 100 else 1)
+PYEOF
+}
+
+if stage_e_csv_complete; then
+    stage "E: skip (complete F5 CSV exists)"
+else
+    stage "E: building F5 CSV from clean French segments"
+    $VENV/python - "$TRANSCRIBED" "$F5_CSV" <<'EOF'
+import glob, json, os, sys, unicodedata, tempfile
 trans_dir, out_csv = sys.argv[1], sys.argv[2]
 vocab = set(l.rstrip("\n") for l in open("/home/scott/vintage-voice/models/OpenF5-TTS-Base/vocab.txt"))
 rows, dropped_chars, hours = [], set(), 0.0
@@ -120,15 +157,28 @@ for jf in sorted(glob.glob(os.path.join(trans_dir, "*.json"))):
     if len(text) > 5 and os.path.exists(d["audio_path"]):
         rows.append(f'{d["audio_path"]}|{text}')
         hours += d.get("duration", 0) / 3600
-with open(out_csv, "w") as f:
-    f.write("audio_file|text\n" + "\n".join(rows) + "\n")
 print(f"French clean samples: {len(rows)}  ({hours:.2f}h)")
 if dropped_chars:
     print(f"chars stripped (not in vocab): {sorted(dropped_chars)}")
 if len(rows) < 100:
+    # Abort BEFORE writing — never leave a partial/undersized CSV that a later
+    # resume could mistake for valid output.
     print("FATAL: under 100 clean French samples — not enough to fine-tune")
     sys.exit(3)
+# Atomic write: build the full file in a temp path, then os.replace() it into
+# place so the CSV at out_csv is only ever the complete article.
+out_dir = os.path.dirname(out_csv) or "."
+fd, tmp = tempfile.mkstemp(suffix=".tmp", dir=out_dir)
+try:
+    with os.fdopen(fd, "w") as f:
+        f.write("audio_file|text\n" + "\n".join(rows) + "\n")
+    os.replace(tmp, out_csv)
+except Exception:
+    if os.path.exists(tmp):
+        os.unlink(tmp)
+    raise
 EOF
+fi
 
 stage "E: preparing Arrow dataset"
 # Pre-seed pretrained vocab where prepare_csv_wavs looks for it in finetune mode
@@ -147,9 +197,10 @@ cd $BASE
 # fp32 training of 337M params = ~6.7GB in weights/grads/Adam/EMA alone -> OOM on 8GB.
 # fp16 autocast (env honored: Trainer passes no mixed_precision) + bnb 8-bit AdamW
 # cuts optimizer state ~2GB and halves activation memory.
+# FIX: removed dead PYTORCH_ALLOC_CONF (typo — wrong variable name, had no
+# effect). Only PYTORCH_CUDA_ALLOC_CONF is honored for expandable_segments.
 WANDB_MODE=offline \
 ACCELERATE_MIXED_PRECISION=fp16 \
-PYTORCH_ALLOC_CONF=expandable_segments:True \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0 $VENV/python -m f5_tts.train.finetune_cli \
     --bnb_optimizer \
