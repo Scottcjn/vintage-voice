@@ -79,6 +79,56 @@ def assert_safe_audio_input(path):
             raise ValueError(f"refusing non-audio/playlist payload: {path}")
 
 
+def _parse_loudnorm_json(stderr):
+    """Extract the loudnorm measurement dict from ffmpeg's stderr.
+
+    With ``print_format=json`` ffmpeg emits a *multi-line* JSON object at the
+    END of stderr, e.g.::
+
+        [Parsed_loudnorm_0 @ 0x...]
+        {
+            "input_i" : "-27.61",
+            "input_tp" : "-9.30",
+            "input_lra" : "5.40",
+            "input_thresh" : "-37.79",
+            ...
+        }
+
+    A line-by-line ``json.loads`` never sees a complete object, so the whole
+    two-pass feature silently degraded to single-pass. Here we locate the LAST
+    balanced ``{ ... }`` block in stderr and parse it. Returns a dict with the
+    ``input_*`` keys on success, or ``{}`` on any parse failure (caller falls
+    back to single-pass).
+    """
+    if not stderr:
+        return {}
+    # ffmpeg's JSON block is the last top-level object in stderr. Find the last
+    # '{' and walk forward tracking brace depth to its matching '}', which is
+    # robust even if other braces appear earlier in the log.
+    start = stderr.rfind('{')
+    while start != -1:
+        depth = 0
+        for idx in range(start, len(stderr)):
+            ch = stderr[idx]
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    block = stderr[start:idx + 1]
+                    try:
+                        candidate = json.loads(block)
+                    except json.JSONDecodeError:
+                        break  # malformed block; try an earlier '{'
+                    if isinstance(candidate, dict) and 'input_i' in candidate:
+                        return candidate
+                    break  # parsed but not the loudnorm object; look earlier
+        # Either we broke out (malformed / wrong object) or never closed the
+        # brace — search for an earlier '{' before this one.
+        start = stderr.rfind('{', 0, start)
+    return {}
+
+
 def _ffmpeg_to_temp(output_path, cmd, timeout):
     """Run an ffmpeg command, writing the result atomically to output_path.
 
@@ -135,20 +185,16 @@ def convert_to_wav(input_path, output_path, sample_rate=24000):
     except subprocess.SubprocessError:
         measure = None
 
-    # Parse the JSON measurement from stderr (ffmpeg prints it after progress).
-    measured = {}
-    if measure is not None:
-        for line in measure.stderr.strip().split('\n'):
-            try:
-                candidate = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(candidate, dict) and 'input_i' in candidate:
-                measured = candidate
-                break
+    # Parse the JSON measurement from stderr. ffmpeg emits a *multi-line* JSON
+    # object at the end of stderr, so we extract the trailing balanced block
+    # rather than scanning line-by-line (which never sees a complete object).
+    measured = _parse_loudnorm_json(measure.stderr) if measure is not None else {}
 
     # ── Pass 2: Apply with measured values ──
-    if measured:
+    # Require every field pass-2 consumes; a partial measurement is treated as a
+    # failure so we fall back to single-pass instead of emitting a broken filter.
+    required = ("input_i", "input_tp", "input_lra", "input_thresh")
+    if measured and all(k in measured for k in required):
         # linear=true: apply pure gain — no dynamic compression. Preserves the
         # original dynamic range while hitting the exact target loudness.
         loudnorm_filter = (
@@ -159,6 +205,10 @@ def convert_to_wav(input_path, output_path, sample_rate=24000):
             f"measured_thresh={measured['input_thresh']}:"
             f"linear=true:print_format=summary"
         )
+        # ffmpeg also reports the DC/normalization offset; pass it through when
+        # present so pass-2 reproduces pass-1's gain decision exactly.
+        if "target_offset" in measured:
+            loudnorm_filter += f":offset={measured['target_offset']}"
     else:
         # Fallback: measurement failed (e.g. very short audio). Best-effort
         # single-pass — rare, but better than dropping the file.
@@ -311,7 +361,13 @@ def check_audio_quality(wav_path, min_rms=-50, max_rms=-5, max_peak=-0.1):
         "-af", "volumedetect",
         "-f", "null", "-"
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    # A volumedetect timeout or ffmpeg error must reject only THIS segment, not
+    # propagate out of the worker and drop the entire source file. Treat any
+    # subprocess failure as "fails quality".
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    except (subprocess.SubprocessError, OSError):
+        return False
     if result.returncode != 0:
         return False
 
@@ -344,6 +400,16 @@ def process_one_file(args_tuple):
             # Rejected non-audio / playlist payload — skip silently.
             return []
         if not ok:
+            return []
+    else:
+        # Resume / pre-populated wav_dir path: the WAV already exists, so
+        # convert_to_wav (which sniffs the input) is skipped. Sniff the existing
+        # WAV here too — otherwise a .wav whose *content* is a playlist/markup
+        # payload would flow straight into ffmpeg via split_on_silence(),
+        # re-opening the SSRF/local-read hole (CWE-918) on the resume path.
+        try:
+            assert_safe_audio_input(wav_path)
+        except ValueError:
             return []
 
     # Split on silence

@@ -103,13 +103,23 @@ stage "D: done — manifests: $(ls $TRANSCRIBED/train_*.csv 2>/dev/null | xargs 
 # ---------- Stage E: build F5 dataset (French, QC-clean) ----------
 # Resume guard (matches Stage B pattern): on a re-run after a later-stage crash,
 # skip the expensive CSV + Arrow rebuild — BUT only if the existing CSV is
-# actually complete. A crashed Stage E could leave a truncated/partial CSV on
-# disk; skipping on mere existence would feed garbage into training. We therefore
-# (a) write the CSV atomically (temp file + os.replace, so it only appears once
-# fully written) and (b) verify completeness (header present + >= the required
-# 100 sample rows) before skipping.
+# actually complete AND up-to-date. A crashed Stage E could leave a
+# truncated/partial CSV on disk; skipping on mere existence would feed garbage
+# into training. We therefore (a) write the CSV atomically (temp file +
+# os.replace, so it only appears once fully written), (b) verify completeness
+# (header present + >= the required 100 sample rows), and (c) require the CSV to
+# be NEWER than every transcribed input it derives from — otherwise a re-run
+# after Stage D produced fresh/changed transcriptions would silently train on a
+# stale CSV.
 stage_e_csv_complete() {
     [ -s "$F5_CSV" ] || return 1
+    # Staleness check: if any transcribed *.json is newer than the CSV, the
+    # transcriptions changed since the CSV was built — force a rebuild. `find
+    # -newer` prints the offending file(s); a non-empty result means stale.
+    if [ -d "$TRANSCRIBED" ] && \
+       [ -n "$(find "$TRANSCRIBED" -maxdepth 1 -name '*.json' -newer "$F5_CSV" -print -quit 2>/dev/null)" ]; then
+        return 1
+    fi
     $VENV/python - "$F5_CSV" <<'PYEOF'
 import sys
 path = sys.argv[1]
