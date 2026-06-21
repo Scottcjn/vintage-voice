@@ -211,6 +211,31 @@ LEXICON = {
     "Remi":         "Rémi",
     "Attakapas":    "Atakapa",
     "Acadie":       "Acadie",
+    # ---- Cajun kitchen / table (Daigle, A Dict. of the Cajun Language 1984;
+    #      Valdman et al., Dict. of Louisiana French 2010 — ear-tunable) ----
+    "jambalaya":     "jambalaïa",      # jahm-bah-LIE-ah (same -aya->-aïa as Atchafalaya)
+    "andouille":     "andouï",         # ahn-DOO-ee — smoked pork sausage (drop final schwa)
+    "andouilles":    "andouïs",
+    "maque choux":   "mak-chou",       # mock-SHOO — stewed corn dish
+    "sauce piquante":"sauce picante",  # sohss pee-KAHNT — tomato-pepper stew
+    "fricassée":     "fricassé",       # free-kah-SAY (same -ée->-é as étouffée->étouffé)
+    "filé":          "filé",           # FEE-lay — ground sassafras for gumbo
+    "tasso":         "tasso",          # TAH-so — cured smoked pork
+    # ---- everyday Cajun French (Daigle 1984; Valdman DLF 2010 — ear-tunable) ----
+    "mais oui":      "mè oui",         # may-WEE — "why yes / of course" (same mè- as "mais là")
+    "mais non":      "mè non",         # may-NOHN — "why no"
+    "icitte":        "icitte",         # ee-SEET — Cajun "here" (vs. textbook "ici")
+    "couillonnade":  "couyonade",      # koo-yoh-NAHD — foolishness (same root as couillon->couyon)
+    "couillonnades": "couyonades",
+    "bébête":        "bébête",         # bay-BET — critter / bug / bogeyman
+    "bébêtes":       "bébêtes",
+    "tonnerre":      "tonnerre",       # toh-NAIR — "thunder", common exclamation ("tonnerre m'écrase")
+    # ---- more place-names (USGS GNIS; local Louisiana French pronunciation) ----
+    "Des Allemands": "Dèz Almand",     # day-zal-MAHN — St. Charles/Lafourche town ("the Germans")
+    "Choupique":     "Choupique",      # shoo-PEEK — bayou/community + the bowfin fish
+    "Grosse Tête":   "Grosse Tête",    # grohs-TET — Iberville Parish town
+    "Arnaudville":   "Arnaudville",    # ar-no-VEEL — St. Landry/St. Martin town
+    "Bogalusa":      "Bogalouza",      # boh-gah-LOO-zah — Washington Parish town
     # ---- Sophia's own name, the Cajun way (ear-tunable) ----
     "Sophia Elya":  "Sofia Élia",
     "Elya":         "Élia",
