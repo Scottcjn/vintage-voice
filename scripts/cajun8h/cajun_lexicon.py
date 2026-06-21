@@ -377,6 +377,26 @@ LEXICON = {
     "Sonnier":      "Sonyé",
     "Melançon":     "Mélançon",
     "Melancon":     "Mélançon",
+    # ---- LSU glossary household, clothing & everyday descriptor terms ----
+    # Source: LSU Cajun French-English glossary, entries with bracketed pronunciation cues.
+    "camisole":     "camizole",        # [KAH MEE ZAWL] — nightgown; z-like s keeps the local cue
+    "canaille":     "canaï",           # [KAH NAHY] — mischievous / wily, softened local sense
+    "canaillerie":  "canaïrie",        # [KAH NAH YREE] — mischief / trickery
+    "canique":      "canique",         # [KAH NEEK] — marble (child's toy)
+    "capot":        "capo",            # [KAPO] — coat / jacket, final t silent
+    "capot ciré":   "capo ciré",       # raincoat; same final-t drop
+    "carrément":    "carrèman",        # [KAH REH MAn] — directly / abruptly
+    "carrement":    "carrèman",        # ascii-typed variant
+    "chapelet":     "chaplé",          # [SHAH PLEH] — rosary
+    "chaste-femme": "chasse-femme",    # [SHAHS FAM] — midwife; LSU gives this pronunciation variant
+    "hameçon":      "am-son",          # [AHM SOn] — fish hook, initial h silent
+    "hamecon":      "am-son",          # ascii-typed variant
+    "hélas":        "éla",             # [EHLAH] — sigh
+    "helas":        "éla",             # ascii-typed variant
+    "grands hélas": "grands éla",      # LSU phrase: faire des grands hélas
+    "grands helas": "grands éla",
+    "hibou":        "ibou",            # [EEBOO] — owl, initial h silent
+    "hormis que":   "ormi que",        # [AWRMEE KEUH] — unless
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
