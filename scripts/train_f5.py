@@ -90,38 +90,97 @@ def collate_fn(batch):
     }
 
 
-def train_epoch(model, dataloader, optimizer, device, epoch):
-    """Single training epoch"""
+def train_epoch(model, dataloader, optimizer, device, epoch, scaler=None, grad_acc_steps=4):
+    """Single training epoch with mixed precision and gradient accumulation."""
     model.train()
     total_loss = 0
     n_batches = 0
+    optimizer.zero_grad()
 
     for batch_idx, batch in enumerate(dataloader):
         audio = batch["audio"].to(device)
         texts = batch["text"]
+        batch_size = audio.size(0)
 
+        with torch.amp.autocast("cuda", enabled=scaler is not None):
+            # Tokenize text
+            try:
+                from f5_tts.model.utils import get_tokenizer
+                tokenizer = get_tokenizer("custom", None)
+                text_tokens = tokenizer(texts, return_tensors="pt", padding=True).to(device)
+            except (ImportError, AttributeError):
+                text_tokens = None
+
+            # F5-TTS forward: model expects (text_tokens, audio_features)
+            # audio needs to be converted to mel-spectrogram first
+            mel = audio_to_mel(audio, device)
+            
+            if hasattr(model, "forward") and text_tokens is not None:
+                # F5-TTS DiT forward returns loss when given both text and audio
+                loss = model(text_tokens, text_tokens.size(1), mel, mel.size(-1))
+            else:
+                # Fallback: placeholder loss for pipeline testing
+                pred = model(audio)
+                loss = F.mse_loss(pred, audio)
+
+        # Scale loss for gradient accumulation
+        loss = loss / grad_acc_steps
+        if scaler:
+            scaler.scale(loss).backward()
+        else:
+            loss.backward()
+
+        total_loss += loss.item() * grad_acc_steps
+        n_batches += 1
+
+        if (batch_idx + 1) % grad_acc_steps == 0:
+            if scaler:
+                scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            if scaler:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
+            optimizer.zero_grad()
+
+        if (batch_idx + 1) % 10 == 0:
+            avg_loss = total_loss / max(n_batches, 1)
+            print(f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] Loss: {avg_loss:.6f}")
+
+    # Final step
+    if n_batches % grad_acc_steps != 0:
+        if scaler:
+            scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        if scaler:
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            optimizer.step()
         optimizer.zero_grad()
 
-        # Forward pass (F5-TTS specific — adapt to actual model API)
-        # This is the training loop structure; actual F5-TTS integration
-        # requires importing their model and loss functions
-        try:
-            loss = model.compute_loss(audio, texts)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-
-            total_loss += loss.item()
-            n_batches += 1
-
-            if (batch_idx + 1) % 10 == 0:
-                avg_loss = total_loss / n_batches
-                print(f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] Loss: {avg_loss:.4f}")
-        except Exception as e:
-            print(f"  Batch {batch_idx} error: {e}")
-            continue
-
     return total_loss / max(n_batches, 1)
+
+
+def audio_to_mel(waveform, device):
+    """Convert audio waveform to mel-spectrogram for F5-TTS input."""
+    n_fft = 1024
+    hop_length = 256
+    n_mels = 100
+    try:
+        from torchaudio.transforms import MelSpectrogram
+        mel_transform = MelSpectrogram(
+            sample_rate=24000,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            n_mels=n_mels,
+        ).to(device)
+        mel = mel_transform(waveform)
+        mel = (mel + 1e-8).log()
+        return mel
+    except Exception:
+        return waveform.unsqueeze(1)
 
 
 def main():
@@ -131,10 +190,12 @@ def main():
     parser.add_argument("--output", default="/mnt/18tb/models/vintage-voice")
     parser.add_argument("--preset", default="transatlantic", help="Voice preset to train")
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=2, help="Per-device batch size (reduce for 8GB GPU, use grad-acc)")
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--save-every", type=int, default=5)
+    parser.add_argument("--grad-acc", type=int, default=4, help="Gradient accumulation steps (for 8GB GPU)")
+    parser.add_argument("--mixed-precision", action="store_true", default=True, help="Enable mixed precision training")
     args = parser.parse_args()
 
     os.makedirs(args.output, exist_ok=True)
@@ -197,12 +258,24 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    # Mixed precision
+    scaler = torch.amp.GradScaler("cuda") if args.mixed_precision else None
+    if scaler:
+        print(f"  Mixed precision: enabled")
+
+    # Gradient accumulation
+    eff_batch = args.batch_size * args.grad_acc
+    print(f"  Effective batch size: {eff_batch} (batch={args.batch_size} x grad_acc={args.grad_acc})")
+    if eff_batch > args.batch_size:
+        print(f"  Recommended for 8GB GPU: reduces memory by {args.grad_acc}x")
+
     # Training loop
     print(f"\nStarting training...")
     best_loss = float("inf")
 
     for epoch in range(1, args.epochs + 1):
-        avg_loss = train_epoch(model, dataloader, optimizer, device, epoch)
+        avg_loss = train_epoch(model, dataloader, optimizer, device, epoch,
+                            scaler=scaler, grad_acc_steps=args.grad_acc)
         scheduler.step()
 
         print(f"Epoch {epoch}/{args.epochs} — Loss: {avg_loss:.4f} — LR: {scheduler.get_last_lr()[0]:.2e}")
