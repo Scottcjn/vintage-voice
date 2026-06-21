@@ -72,3 +72,30 @@ def test_cajun_lexicon_js_export_includes_culinary_terms():
     assert '"boudin": "bou-dan"' in js
     assert '"courtbouillon": "cou-bouyon"' in js
     assert '"remoulade": "rémoularde"' in js
+
+
+def check_respells_acadiana_town_names():
+    text = "Ville Platte, Gueydan, Duson, Erath, and Pierre Part."
+
+    assert respell(text) == "Ville Plat, Guédan, Duzon, Érat, and Pierre Par."
+
+
+def check_exports_acadiana_town_names_to_js():
+    js = to_js()
+
+    assert '"Ville Platte": "Ville Plat"' in js
+    assert '"Mermentau": "Mermento"' in js
+    assert '"Meraux": "Méro"' in js
+
+
+def test_respells_acadiana_town_names():
+    check_respells_acadiana_town_names()
+
+
+def test_exports_acadiana_town_names_to_js():
+    check_exports_acadiana_town_names_to_js()
+
+
+if __name__ == "__main__":
+    check_respells_acadiana_town_names()
+    check_exports_acadiana_town_names_to_js()
