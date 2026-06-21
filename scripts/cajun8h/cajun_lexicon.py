@@ -298,6 +298,32 @@ LEXICON = {
     "rat musqué":   "rat musqué",  # rah moos-KAY — muskrat (the prized trapping animal)
     "tortue":       "tortu",       # tor-TU — turtle (silent -e)
     "tortues":      "tortus",
+    # ---- religion, holidays & the faith ----
+    "Toussaint":       "Toussan",      # All Saints' Day, "too-SAN" — Valdman, Dict. of La. French (DLF) 2010
+    "Pâques":          "Pâk",          # Easter, "pahk" (final -s silent) — DLF
+    "Paques":          "Pâk",          # ascii-typed variant
+    "Carême":          "Carèm",        # Lent, "ka-REM" — DLF
+    "Careme":          "Carèm",        # ascii-typed variant
+    "réveillon":       "révéyon",      # Christmas / New-Year night feast, "ray-vay-YOHN" — DLF
+    "reveillon":       "révéyon",      # ascii-typed variant
+    "Vendredi Saint":  "Vendredi San", # Good Friday, "vahn-druh-dee-SAN" — DLF
+    "messe de minuit": "mess de minwi",# midnight Mass, "mess-duh-mee-NWEE" — Ancelet
+    "bon Dieu":        "bon Djeu",     # "good Lord" — Cajun palatalizes Dieu to "djeu" — Ancelet
+    "Mardi Gras":      "Mardi Gra",    # "mar-dee-GRAH" (final -s silent) — DLF
+    # ---- weather, water & the wild ----
+    "suroît":          "surwa",        # southwest wind, "su-RWA" (oî->wa, final t silent) — DLF
+    "suroit":          "surwa",        # ascii-typed variant
+    "crapaud":         "crapo",        # toad/frog, "kra-PO" — Daigle 1984
+    "crapauds":        "crapo",
+    "mouche à feu":    "mouch à feu",  # firefly, "moosh-a-FEU" — DLF
+    "au ras":          "o ra",         # right beside / close to, "o-RA" — DLF
+    # ---- time & everyday turns of phrase ----
+    "tantôt":          "tantô",        # a while ago / later on, "tahn-TOH" — DLF
+    "tantot":          "tantô",        # ascii-typed variant
+    "bêtise":          "bétiz",        # nonsense / foolishness, "bay-TEEZ" — DLF
+    "betise":          "bétiz",        # ascii-typed variant
+    "lâche pas la patate": "lâche pa la patat",  # "don't drop the potato" = don't give up — Ancelet
+    "lache pas la patate": "lâche pa la patat",  # ascii-typed variant
 }
 
 _lower_index = {k.lower(): v for k, v in LEXICON.items()}
