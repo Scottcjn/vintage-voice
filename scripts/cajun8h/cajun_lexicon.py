@@ -166,6 +166,32 @@ LEXICON = {
     "ecrevisses":   "écrevisses",
     "crevette":     "chevrette",       # LSU glossary notes Louisiana French chevrette for shrimp
     "crevettes":    "chevrettes",
+    # ---- LSU-attested everyday verbs, games & descriptors (ear-tunable) ----
+    # Source: LSU Cajun French-English glossary, bracketed pronunciation cues.
+    "babiller":     "bah-bi-yé",       # [BAH-BEE-YEH] — to scold, usually a child
+    "badgeuler":    "bah-jeu-lé",      # [BAH JEUH LEH] — to harass / nag
+    "badjeuler":    "bah-jeu-lé",      # LSU spelling variant for badgeuler
+    "cacher-faite": "kah-shé-fête",    # [KAH SHEH FET] — hide-and-seek game
+    "cachez-fête":  "kah-shé-fête",    # LSU variant spelling
+    "cache-et-fête":"kah-shé-fête",    # LSU variant spelling
+    "brailler":     "brah-yé",         # [BRAH YEH] — to cry
+    "brin":         "bren",            # [BREn] — a little bit / small quantity
+    "fouiller":     "fou-yé",          # [FOOYEH] — to dig / rummage around
+    "fréquenter":   "fré-kan-té",      # [FREH KAnTEH] — to socialize / visit regularly
+    "frequenter":   "fré-kan-té",      # ascii-typed variant
+    "gaspiller":    "gah-spi-yé",      # [GAH SPEE YEH] — to waste
+    "grouiller":    "grou-yé",        # [GROOYEH] — to move
+    "fatras":       "fah-trah",        # [FAH TRAH] — trash / no-account person
+    "pistache":     "pi-stahsh",       # [PEE STAH SH] — peanut
+    # NOTE: lowercase "plaquemine" (persimmon) intentionally omitted — it
+    # case-collides with the town "Plaquemine" in respell()'s case-insensitive
+    # fallback. The town entry wins; the persimmon sense is dropped.
+    "poulailler":   "pou-la-yé",       # [POO LAH YEH] — chicken coop
+    "quereller":    "kré-lé",          # [KRE LEH] — to argue / scold
+    "espeler":      "esplé",           # [ESPLEH] — to spell
+    "dételer":      "dé-tlé",          # [DEH TLEH] — to unharness
+    "deteler":      "dé-tlé",          # ascii-typed variant
+    "avalasse":     "ah-vah-lahs",     # [AH VAH LAHS] — downpour
     # ---- St. Landry / prairie-Cajun colloquial (deep-research 2026-06-16) ----
     "asteur":       "asteur",          # ah-STUR — "now" (from à cette heure)
     "astheure":     "asteur",
