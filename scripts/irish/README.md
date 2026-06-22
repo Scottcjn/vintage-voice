@@ -58,3 +58,30 @@ Say anything in her Irish voice:
 CUDA_VISIBLE_DEVICES="" venv-cosy/bin/python scripts/irish/irish_say.py "Top of the morning." out
 # -> data/output/irish_say/out.wav
 ```
+
+## Talking head (lip-synced video)
+Turn a still portrait + a generated line into a **lip-synced talking-head video**.
+The audio drives the mouth directly — LTX-2.3 `LoadAudio → TrimAudioDuration →
+LTXVAudioVAEEncode` into the conditioned latent (true sync, not a mouth pasted on).
+
+```bash
+# 1. generate the line in Sophia's Irish voice (see above), then
+# 2. flatten the LTX-2.3 ia2v workflow ONCE (browser console / Playwright):
+#      JSON.stringify((await app.graphToPrompt()).output)  ->  ia2v_graphToPrompt.json
+# 3. build the headless prompt:
+python3 scripts/irish/ltx_lipsync.py --image portrait.png --audio out.wav \
+    --audio-dur 3.46 --prefix sophia_irish
+# 4. POST ltx_ia2v_prompt.json to your ComfyUI /prompt  (the POST is the validator:
+#    HTTP 400 + node_errors = bad graph, no GPU burned). Poll /history/<id>;
+#    output lands in ComfyUI/output/sophia_irish_00001_.mp4
+```
+
+`ltx_lipsync.py` resolves the ia2v subgraph **structurally** (by node role), so it
+keeps working even when the server lacks the `ComfyMathExpression` custom node — it
+resolves those four derived constants (latent W/2, H/2, fps, length=dur·fps+1) to
+literals and deletes the nodes. ~6–8 min per clip on a single 32 GB V100; keep
+clips **< ~4 s** (lip-sync drifts on longer takes). The capture only needs redoing
+if the workflow itself changes.
+
+**Live demo:** [elyanlabs.ai/vintage-voice.html#talking-sophia](https://elyanlabs.ai/vintage-voice.html#talking-sophia)
+— Sophia Elya speaking in her fine-tuned Dublin Irish voice, lip-synced on lab hardware.
