@@ -59,8 +59,46 @@ def fine_tune(ref_audio, manifest_csv, output_dir, epochs=10, device="cuda:0"):
     from torch.cuda.amp import GradScaler, autocast
     from torch.utils.data import DataLoader
 
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from scripts.train_f5_8gb import VintageVoiceDataset, collate_fn, enable_gradient_checkpointing
+    # Self-contained: define helpers inline so this demo has no dependency on PR #222
+    from torch.utils.data import Dataset, DataLoader
+    class _LocalDataset(Dataset):
+        def __init__(self, manifest_path, sample_rate=24000, max_duration=10.0):
+            self.sample_rate = sample_rate
+            self.max_samples = int(max_duration * sample_rate)
+            self.entries = []
+            import csv
+            with open(manifest_path, newline="") as f:
+                reader = csv.DictReader(f, delimiter="|")
+                for row in reader:
+                    if os.path.exists(row["audio_path"]) and float(row["duration"]) >= 2.0:
+                        self.entries.append(row)
+            print(f"Dataset: {len(self.entries)} segments")
+        def __len__(self):
+            return len(self.entries)
+        def __getitem__(self, idx):
+            import torchaudio
+            entry = self.entries[idx]
+            wf, sr = torchaudio.load(entry["audio_path"])
+            if sr != self.sample_rate:
+                wf = torchaudio.functional.resample(wf, sr, self.sample_rate)
+            if wf.shape[0] > 1:
+                wf = wf.mean(dim=0, keepdim=True)
+            if wf.shape[1] > self.max_samples:
+                wf = wf[:, :self.max_samples]
+            return {"audio": wf.squeeze(0), "text": entry["text"], "duration": float(entry["duration"])}
+    def _collate(batch):
+        max_len = max(b["audio"].shape[0] for b in batch)
+        audios, texts = [], []
+        for b in batch:
+            a = b["audio"]
+            pad = max_len - a.shape[0]
+            if pad > 0:
+                a = torch.nn.functional.pad(a, (0, pad))
+            audios.append(a)
+            texts.append(b["text"])
+        return {"audio": torch.stack(audios), "text": texts}
+    dataset = _LocalDataset(manifest_csv, max_duration=10.0)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=_collate, num_workers=2)
 
     print(f"\n{'='*60}")
     print("STAGE 1: Fine-tuning F5-TTS on heritage voice")
@@ -77,8 +115,7 @@ def fine_tune(ref_audio, manifest_csv, output_dir, epochs=10, device="cuda:0"):
     model = DiT(dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4).to(device)
     enable_gradient_checkpointing(model)
 
-    dataset = VintageVoiceDataset(manifest_csv, max_duration=10.0)
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn, num_workers=2)
+
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5, weight_decay=0.01)
     scaler = GradScaler()
@@ -106,6 +143,14 @@ def fine_tune(ref_audio, manifest_csv, output_dir, epochs=10, device="cuda:0"):
                 optimizer.zero_grad(set_to_none=True)
             total_loss += loss.item() * accum_steps
             n += 1
+
+        # Flush remaining gradient accumulation
+        if n % accum_steps != 0:
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
 
         avg_loss = total_loss / max(n, 1)
         elapsed = time.time() - t0
