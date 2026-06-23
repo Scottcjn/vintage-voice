@@ -27,7 +27,7 @@ MIN_CHARS_PER_SEC = 4.0
 MAX_CHARS_PER_SEC = 30.0
 
 
-def qc_flags(seg, duration):
+def qc_flags(seg, total_duration):
     """Return list of QC failure reasons for a whisper segment dict"""
     flags = []
     if seg.get("no_speech_prob", 0) > MAX_NO_SPEECH:
@@ -37,8 +37,11 @@ def qc_flags(seg, duration):
     if seg.get("compression_ratio", 1) > MAX_COMPRESSION:
         flags.append("repeat_loop")
     text = seg.get("text", "").strip()
-    if duration > 0:
-        cps = len(text) / duration
+
+    # Use the actual duration of the sub-segment for chars_per_sec calculation
+    seg_duration = seg.get("end", 0) - seg.get("start", 0)
+    if seg_duration > 0:
+        cps = len(text) / seg_duration
         if cps < MIN_CHARS_PER_SEC:
             flags.append("too_sparse")
         elif cps > MAX_CHARS_PER_SEC:
@@ -97,6 +100,7 @@ def main():
         text = r["text"].strip()
         whisper_segs = r.get("segments", [])
         # Worst-case QC across sub-segments: one hallucinated stretch poisons the pair
+        # Pass the total_duration here, but qc_flags will use seg["end"] - seg["start"] for its internal calculations.
         flags = sorted({f for s in whisper_segs for f in qc_flags(s, duration)})
         if not whisper_segs:
             flags.append("empty")
