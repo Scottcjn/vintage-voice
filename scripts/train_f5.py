@@ -13,6 +13,7 @@ Based on F5-TTS: https://github.com/SWivid/F5-TTS
 """
 import argparse
 import csv
+import math
 import os
 import random
 
@@ -78,6 +79,12 @@ class VintageVoiceDataset(Dataset):
                     # Admitting it as duration=0.0 would slip it past the
                     # MIN_DURATION guard and corrupt any downstream length-based
                     # filtering or bucketing, so drop and count it instead.
+                    skipped["no_duration"] += 1
+                    continue
+                if not math.isfinite(duration):
+                    # A non-finite duration (NaN/inf) would slip past the
+                    # ``< _MIN_DURATION`` check below, since ``nan < x`` is
+                    # always False, so reject it as an unusable duration.
                     skipped["no_duration"] += 1
                     continue
                 if duration < self._MIN_DURATION:
