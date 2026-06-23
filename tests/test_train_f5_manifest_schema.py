@@ -94,3 +94,30 @@ def test_textless_and_short_rows_are_skipped_not_fatal(tmp_path):
     ds = VintageVoiceDataset(str(manifest))
 
     assert len(ds) == 1, "only the one valid, transcribed, >=2s row should load"
+
+
+def test_unprobeable_duration_is_skipped_not_admitted_as_zero(tmp_path):
+    """A clip whose duration is neither in the manifest nor probeable from the
+    file (corrupt/unsupported audio) must be dropped, not admitted as 0.0 — a
+    0.0 entry would slip past the MIN_DURATION guard and poison downstream
+    length-based bucketing."""
+    good = tmp_path / "good.wav"
+    _wav(good, seconds=3.0)
+    # A path that exists (passes the os.path.exists check) but is not decodable
+    # audio, so torchaudio.info raises and no duration column is present.
+    bogus = tmp_path / "bogus.wav"
+    bogus.write_bytes(b"not really audio")
+    manifest = tmp_path / "noduration.csv"
+    _write_manifest(
+        manifest,
+        ["audio_file", "text"],
+        [
+            [str(good), "valid line"],
+            [str(bogus), "unprobeable clip"],  # duration unknown -> skipped
+        ],
+    )
+
+    ds = VintageVoiceDataset(str(manifest))
+
+    assert len(ds) == 1, "the unprobeable-duration row must be skipped, not kept as 0.0"
+    assert ds[0]["duration"] == pytest.approx(3.0, abs=0.1)

@@ -26,13 +26,18 @@ from pathlib import Path
 class VintageVoiceDataset(Dataset):
     """Dataset of preprocessed vintage audio segments with transcriptions"""
 
-    # Accepted column aliases for the audio path. The pipeline emits several
-    # manifest schemas: preprocess.py / fast_manifest.py / auto_pipeline.sh
-    # write ``path|duration|source``, while build_f5_csv.py (the F5 training
-    # CSV) writes ``audio_file|text``. Older code here assumed an ``audio_path``
-    # column that no producer emits, so the loader raised KeyError on the first
-    # row and training never started. Resolve the column flexibly instead.
-    _AUDIO_KEYS = ("audio_path", "path", "audio_file", "wav", "filename")
+    # Accepted column aliases for the audio path, in producer-precedence order.
+    # The pipeline emits two manifest schemas: preprocess.py / fast_manifest.py /
+    # auto_pipeline.sh write ``path|duration|source``, while build_f5_csv.py (the
+    # F5 training CSV) writes ``audio_file|text`` — so ``path`` and ``audio_file``
+    # come first. ``audio_path`` is the column older code here wrongly assumed
+    # every producer emits (none does, which is why the loader used to KeyError on
+    # the first row and training never started); it is kept last only as a
+    # defensive fallback so that, should a future writer add it, it cannot silently
+    # shadow the columns producers actually emit today. ``wav``/``filename`` were
+    # dropped — no tool emits them, and speculative aliases only desync this table
+    # from the real pipeline schemas.
+    _AUDIO_KEYS = ("path", "audio_file", "audio_path")
     _MIN_DURATION = 2.0
 
     def __init__(self, manifest_path, sample_rate=24000, max_duration=15.0):
@@ -40,7 +45,13 @@ class VintageVoiceDataset(Dataset):
         self.max_samples = int(max_duration * sample_rate)
         self.entries = []
 
-        skipped = {"no_audio_col": 0, "missing_file": 0, "no_text": 0, "too_short": 0}
+        skipped = {
+            "no_audio_col": 0,
+            "missing_file": 0,
+            "no_text": 0,
+            "no_duration": 0,
+            "too_short": 0,
+        }
         with open(manifest_path) as f:
             reader = csv.DictReader(f, delimiter="|")
             for row in reader:
@@ -61,13 +72,21 @@ class VintageVoiceDataset(Dataset):
                     skipped["no_text"] += 1
                     continue
                 duration = self._row_duration(row, audio_path)
-                if duration is not None and duration < self._MIN_DURATION:
+                if duration is None:
+                    # The manifest carried no usable duration and torchaudio could
+                    # not probe the file (corrupt audio / unsupported format).
+                    # Admitting it as duration=0.0 would slip it past the
+                    # MIN_DURATION guard and corrupt any downstream length-based
+                    # filtering or bucketing, so drop and count it instead.
+                    skipped["no_duration"] += 1
+                    continue
+                if duration < self._MIN_DURATION:
                     skipped["too_short"] += 1
                     continue
                 self.entries.append({
                     "audio_path": audio_path,
                     "text": text,
-                    "duration": float(duration) if duration is not None else 0.0,
+                    "duration": float(duration),
                 })
 
         print(f"Dataset: {len(self.entries)} segments")
