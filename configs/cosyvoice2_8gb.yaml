@@ -139,6 +139,11 @@ tokenize: !name:cosyvoice.dataset.processor.tokenize
     get_tokenizer: !ref <get_tokenizer>
     allowed_special: !ref <allowed_special>
 filter: !name:cosyvoice.dataset.processor.filter
+    # SFT-only filter bounds. The dynamic batcher (max_frames_in_batch below) is
+    # what actually caps VRAM; this filter is only a sanity bound to drop
+    # pathological outliers and tiny artefacts. token_frame_rate=25, so
+    # max_length=6000 -> 240 s ceiling, min_length=100 -> 4 s floor.
+    # Earlier "max_length: 800" silently dropped heritage clips > 32 s.
     max_length: 6000
     min_length: 100
     token_max_length: 200
@@ -174,7 +179,11 @@ batch: !name:cosyvoice.dataset.processor.batch
     batch_type: 'dynamic'
     max_frames_in_batch: 800
 padding: !name:cosyvoice.dataset.processor.padding
-    use_spk_embedding: False # change to True during sft
+    # This config is SFT-only. spk_embedding is required and is pre-extracted
+    # into the parquet by the cajun8h prep step (see parse_embedding above and
+    # docs/CAJUN_8H_FINETUNE.md). Do not point a from-scratch pre-train at this
+    # config without first wiring spk_embedding into the data.
+    use_spk_embedding: True
 
 
 # dataset processor pipeline
