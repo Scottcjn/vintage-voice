@@ -13,6 +13,7 @@ Based on F5-TTS: https://github.com/SWivid/F5-TTS
 """
 import argparse
 import csv
+import math
 import os
 import random
 
@@ -26,18 +27,98 @@ from pathlib import Path
 class VintageVoiceDataset(Dataset):
     """Dataset of preprocessed vintage audio segments with transcriptions"""
 
+    # Accepted column aliases for the audio path, in producer-precedence order.
+    # The pipeline emits two manifest schemas: preprocess.py / fast_manifest.py /
+    # auto_pipeline.sh write ``path|duration|source``, while build_f5_csv.py (the
+    # F5 training CSV) writes ``audio_file|text`` — so ``path`` and ``audio_file``
+    # come first. ``audio_path`` is the column older code here wrongly assumed
+    # every producer emits (none does, which is why the loader used to KeyError on
+    # the first row and training never started); it is kept last only as a
+    # defensive fallback so that, should a future writer add it, it cannot silently
+    # shadow the columns producers actually emit today. ``wav``/``filename`` were
+    # dropped — no tool emits them, and speculative aliases only desync this table
+    # from the real pipeline schemas.
+    _AUDIO_KEYS = ("path", "audio_file", "audio_path")
+    _MIN_DURATION = 2.0
+
     def __init__(self, manifest_path, sample_rate=24000, max_duration=15.0):
         self.sample_rate = sample_rate
         self.max_samples = int(max_duration * sample_rate)
         self.entries = []
 
+        skipped = {
+            "no_audio_col": 0,
+            "missing_file": 0,
+            "no_text": 0,
+            "no_duration": 0,
+            "too_short": 0,
+        }
         with open(manifest_path) as f:
             reader = csv.DictReader(f, delimiter="|")
             for row in reader:
-                if os.path.exists(row["audio_path"]) and float(row["duration"]) >= 2.0:
-                    self.entries.append(row)
+                audio_path = next(
+                    (row[k] for k in self._AUDIO_KEYS if row.get(k)), None
+                )
+                if not audio_path:
+                    skipped["no_audio_col"] += 1
+                    continue
+                if not os.path.exists(audio_path):
+                    skipped["missing_file"] += 1
+                    continue
+                text = (row.get("text") or "").strip()
+                if not text:
+                    # An audio-only manifest (path|duration|source) carries no
+                    # transcription; TTS fine-tuning needs the paired text, so
+                    # skip rather than train on an empty target.
+                    skipped["no_text"] += 1
+                    continue
+                duration = self._row_duration(row, audio_path)
+                if duration is None:
+                    # The manifest carried no usable duration and torchaudio could
+                    # not probe the file (corrupt audio / unsupported format).
+                    # Admitting it as duration=0.0 would slip it past the
+                    # MIN_DURATION guard and corrupt any downstream length-based
+                    # filtering or bucketing, so drop and count it instead.
+                    skipped["no_duration"] += 1
+                    continue
+                if not math.isfinite(duration):
+                    # A non-finite duration (NaN/inf) would slip past the
+                    # ``< _MIN_DURATION`` check below, since ``nan < x`` is
+                    # always False, so reject it as an unusable duration.
+                    skipped["no_duration"] += 1
+                    continue
+                if duration < self._MIN_DURATION:
+                    skipped["too_short"] += 1
+                    continue
+                self.entries.append({
+                    "audio_path": audio_path,
+                    "text": text,
+                    "duration": float(duration),
+                })
 
         print(f"Dataset: {len(self.entries)} segments")
+        dropped = {k: v for k, v in skipped.items() if v}
+        if dropped:
+            print(f"  (skipped rows: {dropped})")
+
+    @classmethod
+    def _row_duration(cls, row, audio_path):
+        """Duration in seconds from the manifest column, else probed from the
+        audio file. ``f5_train.csv`` (audio_file|text) has no duration column,
+        so fall back to torchaudio metadata instead of KeyError-ing."""
+        raw = row.get("duration")
+        if raw not in (None, ""):
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                pass
+        try:
+            info = torchaudio.info(audio_path)
+            if info.sample_rate:
+                return info.num_frames / info.sample_rate
+        except Exception:
+            pass
+        return None
 
     def __len__(self):
         return len(self.entries)
