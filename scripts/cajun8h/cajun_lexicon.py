@@ -263,6 +263,8 @@ LEXICON = {
     "chers":        "sha",             # plural "mes chers" — French -s silent, same /ʃa/
     "chères":       "sha",
     "Chers":        "Sha",
+    "mais":         "may",             # Cajun opener "mais..." — sounds like English "may" (/mɛ/), not French "mè"/nasal
+    "Mais":         "May",
     # ---- old Cajun given names (ear-tunable) ----
     "Aleda":        "Aléda",
     "Adalaya":      "Adalaïa",
