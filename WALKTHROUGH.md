@@ -51,7 +51,3 @@ Output saved to `./output/cloned_voice.wav`.
 | edison | Early Edison recording (experimental) |
 | wartime | WWII-era broadcast (experimental) |
 | announcer | Formal announcer (experimental) |
-
-## RTC Wallet
-
-xiaoduo8
