@@ -67,33 +67,34 @@ def load_audio(audio_path, target_sr=24000):
 
 def finetune_voice(reference_audio, output_dir, epochs=10):
     """
-    Fine-tune F5-TTS on reference audio
+    Fine-tune F5-TTS on reference audio (pipeline walkthrough)
     
-    This is a simplified version - in production, use the full train_f5.py
+    NOTE: This is a pipeline walkthrough script. It demonstrates the
+    structure of the fine-tuning pipeline without performing actual
+    model training. For real training, use:
+      python scripts/train_f5_8gb.py --manifest ... --base-model ...
+    
+    The synthetic loss curve below is for illustration only.
     """
     print("\n" + "="*50)
-    print("Step 2: Fine-tuning voice model")
+    print("Step 2: Fine-tuning voice model (pipeline walkthrough)")
     print("="*50)
     
-    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
-    
-    # In a real implementation, this would:
-    # 1. Load F5-TTS base model
-    # 2. Prepare training data
-    # 3. Fine-tune on reference audio
-    # 4. Save checkpoint
     
     print(f"Training for {epochs} epochs...")
     print("This typically takes 30-45 minutes on an 8GB GPU")
+    print("NOTE: Synthetic training progress for pipeline demonstration.")
+    print("      For real training, run: python scripts/train_f5_8gb.py")
     
-    # Simulate training progress
     for epoch in range(1, epochs + 1):
-        time.sleep(2)  # Simulate work
-        print(f"  Epoch {epoch}/{epochs} - Loss: {1.0/epoch:.4f}")
+        time.sleep(2)
+        print(f"  Epoch {epoch}/{epochs} - Loss: {1.0/epoch:.4f} (illustrative)")
     
     checkpoint_path = os.path.join(output_dir, "finetuned_model.pt")
-    print(f"\nModel saved to: {checkpoint_path}")
+    print(f"\nPipeline walkthrough complete.")
+    print(f"  Checkpoint destination: {checkpoint_path}")
+    print(f"  To run real training: python scripts/train_f5_8gb.py --manifest <csv> --base-model <model>")
     
     return checkpoint_path
 
