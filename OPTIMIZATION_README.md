@@ -46,4 +46,4 @@ python scripts/train_f5_optimized.py \
 
 The optimized script maintains the same training effectiveness while reducing memory usage by approximately 50-60%.
 
-Closes #181
+Closes #180
