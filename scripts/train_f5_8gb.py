@@ -113,6 +113,37 @@ def enable_gradient_checkpointing(model):
                 break
 
 
+def get_text_cond(model, texts, tokenizer, device, max_len=128):
+    if tokenizer is None:
+        return None
+    tok_ids = [tokenizer.encode(t) for t in texts]
+    max_tlen = min(max(len(t) for t in tok_ids), max_len)
+    tok_tensor = torch.zeros(len(texts), max_tlen, dtype=torch.long, device=device)
+    for i, ids in enumerate(tok_ids):
+        length = min(len(ids), max_len)
+        tok_tensor[i, :length] = torch.tensor(ids[:length], device=device)
+    if hasattr(model, 'word_embed'):
+        return model.word_embed(tok_tensor).transpose(1, 2)
+    return None
+
+
+def get_mel_spec(waveform, sample_rate=24000):
+    mel_transform = torchaudio.transforms.MelSpectrogram(
+        sample_rate=sample_rate, n_fft=1024, hop_length=256, n_mels=100, power=2.0,
+    ).to(waveform.device)
+    mel = mel_transform(waveform)
+    return (mel + 1e-5).log()
+
+
+def compute_diffusion_loss(model, mel, text_embs, device):
+    B = mel.shape[0]
+    t = torch.rand(B, device=device)
+    noise = torch.randn_like(mel)
+    noisy = (1 - t.view(-1, 1, 1)) * mel + t.view(-1, 1, 1) * noise
+    v_pred = model(noisy, t, cond=text_embs)
+    return F.mse_loss(v_pred, noise - mel)
+
+
 def report_gpu_memory(label=""):
     if torch.cuda.is_available():
         allocated = torch.cuda.memory_allocated() / 1024 ** 3
@@ -120,7 +151,7 @@ def report_gpu_memory(label=""):
         print(f"  [{label}] GPU: {allocated:.2f} GB allocated, {reserved:.2f} GB reserved")
 
 
-def train_epoch(model, dataloader, optimizer, device, epoch, scaler, grad_accum_steps):
+def train_epoch(model, dataloader, optimizer, device, epoch, scaler, grad_accum_steps, tokenizer=None):
     model.train()
     total_loss = 0.0
     n_batches = 0
@@ -130,8 +161,10 @@ def train_epoch(model, dataloader, optimizer, device, epoch, scaler, grad_accum_
         audio = batch["audio"].to(device, non_blocking=True)
         texts = batch["text"]
 
-        with autocast():
-            loss = model.compute_loss(audio, texts)
+        with autocast(enabled=scaler.is_enabled()):
+            mel = get_mel_spec(audio)
+            text_embs = get_text_cond(model, texts, vocab, device)
+            loss = compute_diffusion_loss(model, mel, text_embs, device)
             loss = loss / grad_accum_steps
 
         scaler.scale(loss).backward()
@@ -234,7 +267,7 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         avg_loss = train_epoch(
-            model, dataloader, optimizer, device, epoch, scaler, args.gradient_accumulation
+            model, dataloader, optimizer, device, epoch, scaler, args.gradient_accumulation, tokenizer=vocab
         )
         scheduler.step()
         report_gpu_memory(f"Epoch {epoch} end")
