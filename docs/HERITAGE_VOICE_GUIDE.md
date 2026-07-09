@@ -53,22 +53,23 @@ pip install f5-tts
 ### Step 3: Run the Demo
 
 ```bash
-# Basic usage
-python clone_heritage_voice.py \
-    --input reference_audio.wav \
-    --output cloned_voice.wav
+# Full pipeline: fine-tune + generate
+python demos/clone_heritage_voice.py \
+    --ref-audio refs/my_grandpa.wav \
+    --ref-text "This is a sample of the heritage voice to clone." \
+    --text "Hello, this voice was cloned from a heritage recording." \
+    --output output_cloned.wav \
+    --fine-tune \
+    --fine-tune-manifest data/train.csv \
+    --fine-tune-epochs 10
 
-# With custom text
-python clone_heritage_voice.py \
-    --input grandma.wav \
-    --output grandma_clone.wav \
-    --text "Hello dear, this is grandma's voice preserved forever"
-
-# Quick mode (faster, lower quality)
-python clone_heritage_voice.py \
-    --input grandpa.wav \
-    --output grandpa_clone.wav \
-    --epochs 5
+# Generate only (use existing fine-tuned model)
+python demos/clone_heritage_voice.py \
+    --ref-audio refs/my_grandpa.wav \
+    --ref-text "Sample of heritage voice." \
+    --text "This is generated speech." \
+    --model-path models/vintage-voice-8gb/vintage_voice_custom_best.safetensors \
+    --output output_cloned.wav
 ```
 
 ### Step 4: Listen and Share
@@ -134,20 +135,31 @@ The script automatically:
 
 ### Out of Memory Error
 ```bash
-# Reduce batch size
-python clone_heritage_voice.py --input audio.wav --output out.wav --batch-size 1
+# Reduce fine-tuning epochs
+python demos/clone_heritage_voice.py \
+    --ref-audio refs/my_grandpa.wav \
+    --ref-text "Sample text." \
+    --text "Generated text." \
+    --output out.wav \
+    --fine-tune \
+    --fine-tune-manifest data/train.csv \
+    --fine-tune-epochs 5
 
-# Use gradient accumulation
-python clone_heritage_voice.py --input audio.wav --output out.wav --gradient-accumulation 4
-
-# Reduce audio length
-# Trim reference audio to 30 seconds
+# Use the 8GB optimized training script
+python scripts/train_f5_8gb.py --manifest data/train.csv --base-model model.safetensors --batch-size 2
 ```
 
 ### Poor Quality Output
 ```bash
 # Increase training epochs
-python clone_heritage_voice.py --input audio.wav --output out.wav --epochs 20
+python demos/clone_heritage_voice.py \
+    --ref-audio refs/my_grandpa.wav \
+    --ref-text "Sample text." \
+    --text "Generated text." \
+    --output out.wav \
+    --fine-tune \
+    --fine-tune-manifest data/train.csv \
+    --fine-tune-epochs 20
 
 # Use better reference audio
 # - Cleaner recording
@@ -157,11 +169,8 @@ python clone_heritage_voice.py --input audio.wav --output out.wav --epochs 20
 
 ### Slow Training
 ```bash
-# Use mixed precision (default: enabled)
-python clone_heritage_voice.py --input audio.wav --output out.wav --mixed-precision
-
-# Reduce max duration
-python clone_heritage_voice.py --input audio.wav --output out.wav --max-duration 10
+# Use the 8GB optimized training script for faster training
+python scripts/train_f5_8gb.py --manifest data/train.csv --base-model model.safetensors --mixed-precision
 ```
 
 ## Community Use Cases
