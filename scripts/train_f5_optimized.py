@@ -91,6 +91,42 @@ def collate_fn(batch):
     }
 
 
+def get_mel_spec(waveform, sample_rate=24000):
+    mel_transform = torchaudio.transforms.MelSpectrogram(
+        sample_rate=sample_rate, n_fft=1024, hop_length=256, n_mels=100, power=2.0,
+    ).to(waveform.device)
+    mel = mel_transform(waveform)
+    return (mel + 1e-5).log()
+
+
+def get_text_cond(model, texts, device, max_len=128):
+    tok_ids = []
+    for t in texts:
+        try:
+            from f5_tts.model.utils import get_tokenizer
+            tok = get_tokenizer("vocos")
+            tok_ids.append(tok.encode(t))
+        except Exception:
+            tok_ids.append([0] * max_len)
+    max_tlen = min(max(len(t) for t in tok_ids), max_len)
+    tok_tensor = torch.zeros(len(texts), max_tlen, dtype=torch.long, device=device)
+    for i, ids in enumerate(tok_ids):
+        length = min(len(ids), max_len)
+        tok_tensor[i, :length] = torch.tensor(ids[:length], device=device)
+    if hasattr(model, 'word_embed'):
+        return model.word_embed(tok_tensor).transpose(1, 2)
+    return None
+
+
+def compute_diffusion_loss(model, mel, text_embs, device):
+    B = mel.shape[0]
+    t = torch.rand(B, device=device)
+    noise = torch.randn_like(mel)
+    noisy = (1 - t.view(-1, 1, 1)) * mel + t.view(-1, 1, 1) * noise
+    v_pred = model(noisy, t, cond=text_embs)
+    return F.mse_loss(v_pred, noise - mel)
+
+
 def train_epoch(model, dataloader, optimizer, device, epoch, scaler=None, gradient_accumulation_steps=4):
     """Single training epoch with mixed precision and gradient accumulation"""
     model.train()
@@ -105,7 +141,9 @@ def train_epoch(model, dataloader, optimizer, device, epoch, scaler=None, gradie
         # Mixed precision training
         with torch.cuda.amp.autocast(enabled=scaler is not None):
             try:
-                loss = model.compute_loss(audio, texts)
+                mel = get_mel_spec(audio)
+                text_embs = get_text_cond(model, texts, device)
+                loss = compute_diffusion_loss(model, mel, text_embs, device)
                 loss = loss / gradient_accumulation_steps  # Scale loss for accumulation
             except Exception as e:
                 print(f"  Batch {batch_idx} error: {e}")
