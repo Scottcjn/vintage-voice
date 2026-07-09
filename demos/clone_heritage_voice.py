@@ -41,6 +41,36 @@ import sys
 import time
 
 
+def enable_gradient_checkpointing(model):
+    if hasattr(model, "gradient_checkpointing_enable"):
+        model.gradient_checkpointing_enable()
+        print("  Gradient checkpointing: enabled")
+    else:
+        for m in model.modules():
+            if hasattr(m, "gradient_checkpointing"):
+                m.gradient_checkpointing = True
+                print("  Gradient checkpointing: enabled (per-module)")
+                break
+
+
+def get_mel_spec(waveform, sample_rate=24000):
+    import torchaudio
+    mel_transform = torchaudio.transforms.MelSpectrogram(
+        sample_rate=sample_rate, n_fft=1024, hop_length=256, n_mels=100, power=2.0,
+    ).to(waveform.device)
+    mel = mel_transform(waveform)
+    return (mel + 1e-5).log()
+
+
+def compute_diffusion_loss(model, mel, text_embs, device):
+    B = mel.shape[0]
+    t = torch.rand(B, device=device)
+    noise = torch.randn_like(mel)
+    noisy = (1 - t.view(-1, 1, 1)) * mel + t.view(-1, 1, 1) * noise
+    v_pred = model(noisy, t, cond=text_embs)
+    return torch.nn.functional.mse_loss(v_pred, noise - mel)
+
+
 def check_gpu_memory(min_gb=7.5):
     if not torch.cuda.is_available():
         print("ERROR: CUDA GPU required for voice cloning.")
@@ -132,8 +162,9 @@ def fine_tune(ref_audio, manifest_csv, output_dir, epochs=10, device="cuda:0"):
         for batch_idx, batch in enumerate(dataloader):
             audio = batch["audio"].to(device, non_blocking=True)
             texts = batch["text"]
-            with autocast():
-                loss = model.compute_loss(audio, texts) / accum_steps
+            with autocast(enabled=True):
+                mel = get_mel_spec(audio)
+                loss = compute_diffusion_loss(model, mel, None, device) / accum_steps
             scaler.scale(loss).backward()
             if (batch_idx + 1) % accum_steps == 0:
                 scaler.unscale_(optimizer)
