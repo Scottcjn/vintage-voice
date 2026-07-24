@@ -442,7 +442,13 @@ def _replace(m):
     return repl
 
 _keys = sorted(LEXICON.keys(), key=len, reverse=True)
-_pat = re.compile(r"\b(" + "|".join(re.escape(k) for k in _keys) + r")\b", re.IGNORECASE)
+# Anchor on non-word lookarounds rather than \b so that keys whose first or
+# last character is punctuation are reachable. Several lexicon entries begin
+# with an apostrophe (the Cajun diminutive "'tit", from "petit"); a leading \b
+# requires a word char immediately before the "'", which never holds at a
+# word/sentence start, so those entries could never match and a stray leading
+# apostrophe leaked into the TTS/website text.
+_pat = re.compile(r"(?<!\w)(" + "|".join(re.escape(k) for k in _keys) + r")(?!\w)", re.IGNORECASE)
 
 def respell(text: str) -> str:
     """Apply the Louisiana pronunciation lexicon to a line of text."""
@@ -456,7 +462,7 @@ def to_js() -> str:
         "var CAJUN_LEXICON=" + entries + ";\n"
         "var CAJUN_LEX_LC={};Object.keys(CAJUN_LEXICON).forEach(function(k){CAJUN_LEX_LC[k.toLowerCase()]=CAJUN_LEXICON[k];});\n"
         "function cajunRespell(t){var ks=Object.keys(CAJUN_LEXICON).sort(function(a,b){return b.length-a.length;});"
-        "var re=new RegExp('\\\\b('+ks.map(function(k){return k.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');}).join('|')+')\\\\b','gi');"
+        "var re=new RegExp('(?<!\\\\w)('+ks.map(function(k){return k.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&');}).join('|')+')(?!\\\\w)','gi');"
         "return t.replace(re,function(w){var r=CAJUN_LEXICON[w]||CAJUN_LEX_LC[w.toLowerCase()];if(!r)return w;"
         "return w[0]===w[0].toUpperCase()?r[0].toUpperCase()+r.slice(1):r;});}"
     )
