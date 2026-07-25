@@ -137,3 +137,30 @@ def test_to_js_includes_new_entries():
 if __name__ == "__main__":
     check_respells_acadiana_town_names()
     check_exports_acadiana_town_names_to_js()
+
+
+def test_apostrophe_diminutive_entries_are_reachable():
+    # The Cajun diminutive "'tit" (from "petit") entries begin with an
+    # apostrophe. A \b anchor before the leading "'" required a word char
+    # immediately before it, so these entries were dead and the apostrophe
+    # leaked into the TTS/website text. Every declared key must respell to
+    # its own declared value.
+    for key in ("'tit fille", "'tit garçon", "'tit fer"):
+        assert respell(key) == LEXICON[key], f"dead lexicon entry: {key!r}"
+
+
+def test_every_lexicon_key_respells_to_its_declared_value():
+    mismatches = {k: respell(k) for k, v in LEXICON.items() if respell(k) != v}
+    assert mismatches == {}, f"unreachable lexicon entries: {mismatches}"
+
+
+def test_apostrophe_diminutive_elided_in_sentence():
+    # Leading apostrophe must be elided, not left stranded before "tite".
+    assert respell("Dors bien, 'tit garçon.") == "Dors bien, tite garçon."
+
+
+def test_js_export_uses_non_word_lookarounds_not_word_boundary():
+    emitted = to_js()
+    # Website respeller must use the same reachable anchors as respell().
+    assert "(?<!\\\\w)(" in emitted
+    assert ")(?!\\\\w)" in emitted
