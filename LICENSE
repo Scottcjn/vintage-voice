@@ -20,27 +20,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
--------------------------------------------------------------------------------
-
-IMPORTANT — Licensing of released model weights
-
-This MIT license covers the SOURCE CODE in this repository only.
-
-The VintageVoice model weights published on Hugging Face are a fine-tune of
-F5-TTS (SWivid/F5-TTS), whose pretrained weights are distributed under the
-Creative Commons Attribution-NonCommercial 4.0 (CC-BY-NC-4.0) license. Because
-our fine-tune is a mathematical derivative of those base weights, the released
-VintageVoice model weights inherit CC-BY-NC-4.0. That means:
-
-  * The weights may be used, modified, and redistributed for non-commercial
-    purposes with attribution.
-  * Commercial use of the weights requires a separate arrangement with the
-    upstream F5-TTS authors; see https://huggingface.co/SWivid/F5-TTS .
-
-The training data is 100% public domain, sourced from Archive.org and similar
-archives of pre-1955 recordings. The data itself carries no restrictions.
-
-Summary:
-  Code ............... MIT (this file)
-  Model weights ...... CC-BY-NC-4.0 (inherited from F5-TTS base)
-  Training data ...... Public domain
